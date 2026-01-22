@@ -21,9 +21,24 @@ namespace FoodOrderingPRM392.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllStoreAsync([FromQuery] StoreFilterRequest request) {
-            var list = await _storeRepository.GetAllFoodStore(request);
-            return Ok(new ParentResultResponse { Message = "Success", Result = list});
+        public async Task<IActionResult> GetAllStoreAsync()
+        {
+            var list = await _storeRepository.GetAllFoodStore();
+            return Ok(new ParentResultResponse
+            {
+                Message = "Success",
+                Result = list
+            });
+        }
+        [HttpGet("tenant/{id}")]
+        public async Task<IActionResult> GetAllStoreByTenantAsync(int id) 
+        {
+            var list = await _storeRepository.GetAllFoodStoreByTenant(id);
+            return Ok(new ParentResultResponse 
+            { 
+                Message = "Success", 
+                Result = list
+            });
         }
 
         [HttpGet("{id:long}")]
@@ -33,7 +48,11 @@ namespace FoodOrderingPRM392.Controllers
 
             if (store == null) throw new BadRequestException();
 
-            return Ok(new ParentResultResponse { Message = "Success", Result = store });
+            return Ok(new ParentResultResponse 
+            { 
+                Message = "Success",
+                Result = store 
+            });
         }
     }
 }

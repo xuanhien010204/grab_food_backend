@@ -20,6 +20,26 @@ namespace FoodOrderingRepository.Implement
             this.connectionOption = connectionOption.Value;
         }
 
+        public async Task<FoodStoreDto> CreateFoodStoreAsync(FoodStoreDto request)
+        {
+            FoodStoreDto foodStoreDto = null;
+            using(var con = new SqlConnection(connectionOption.FOOD))
+            {
+                string sql =
+                    @" INSERT INTO FoodStores (StoreId, FoodId, Price)
+                       VALUES (@StoreId, @FoodId, @Price) ";
+
+                object param = new 
+                {
+                    request.StoreId,
+                    request.FoodId,
+                    request.Price
+                };
+                foodStoreDto = await con.QueryFirstOrDefaultAsync<FoodStoreDto>(sql, param);
+            }
+            return foodStoreDto;
+        }
+
         public async Task<IEnumerable<FoodStoreDto>> GetAllFoodStore(FoodStoreFilterRequest request)
         {
             using(var con = new SqlConnection(connectionOption.FOOD))

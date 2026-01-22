@@ -4,6 +4,7 @@ using FoodOrderingCore.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodOrderingPRM392.Migrations
 {
     [DbContext(typeof(FoodOrderingContext))]
-    partial class FoodOrderingContextModelSnapshot : ModelSnapshot
+    [Migration("20260113132253_SeedFoodTypes")]
+    partial class SeedFoodTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,45 +220,9 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<int>("TenantId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("TenantId");
 
                     b.ToTable("Stores");
-                });
-
-            modelBuilder.Entity("FoodOrderingCore.Data.Tenant", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<DateTime>("UpdateTime")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tenants");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreateTime = new DateTime(2025, 1, 16, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Default Tenant",
-                            UpdateTime = new DateTime(2025, 1, 16, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.User", b =>
@@ -358,17 +325,6 @@ namespace FoodOrderingPRM392.Migrations
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("FoodOrderingCore.Data.Store", b =>
-                {
-                    b.HasOne("FoodOrderingCore.Data.Tenant", "Tenant")
-                        .WithMany("Stores")
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Tenant");
-                });
-
             modelBuilder.Entity("FoodOrderingCore.Data.User", b =>
                 {
                     b.HasOne("FoodOrderingCore.Data.Role", "Role")
@@ -408,11 +364,6 @@ namespace FoodOrderingPRM392.Migrations
             modelBuilder.Entity("FoodOrderingCore.Data.Store", b =>
                 {
                     b.Navigation("FoodStores");
-                });
-
-            modelBuilder.Entity("FoodOrderingCore.Data.Tenant", b =>
-                {
-                    b.Navigation("Stores");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.User", b =>

@@ -3,6 +3,7 @@
     public class StoreDto
     {
         public long Id { get; set; }
+        public int TenantId { get; set; }
         public string Name { get; set; }
         public string Address { set; get; }
         public string Latitude { set; get; }
