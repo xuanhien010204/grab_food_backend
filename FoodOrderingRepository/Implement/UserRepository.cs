@@ -7,6 +7,7 @@ using FoodOrderingCore.Enum;
 using FoodOrderingCore.Extensions;
 using FoodOrderingCore.Request;
 using FoodOrderingRepository.Interface;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 
@@ -16,21 +17,16 @@ namespace FoodOrderingRepository.Implement
     {
         private readonly FoodOrderingContext _context;
         private readonly ConnectionOption _connectionOption;
+        private readonly IPasswordHasher<User> _passwordHasher;
 
-        public UserRepository(FoodOrderingContext context, IOptions<ConnectionOption> connectionOption)
+        public UserRepository(
+            FoodOrderingContext context, 
+            IOptions<ConnectionOption> connectionOption,
+            IPasswordHasher<User> passwordHasher)
         {
             _context = context;
             _connectionOption = connectionOption.Value;
-        }
-
-        public Task CreateAsync<E>(E request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Delete<E>(E id)
-        {
-            throw new NotImplementedException();
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<IEnumerable<UserDto>> GetAllAsync()
@@ -64,13 +60,42 @@ namespace FoodOrderingRepository.Implement
 
             using (var con = new SqlConnection(_connectionOption.FOOD))
             {
+                // First, get user by email only
                 string sql =
-                    @" SELECT u.Id, u.Name, u.Email, u.Phone, u.WalletAmount, u.RoleId, r.Name 'RoleName', u.TempCartMeta
+                    @" SELECT u.Id, u.Name, u.Email, u.Phone, u.WalletAmount, u.RoleId, u.Password,
+                              r.Name 'RoleName', u.TempCartMeta
                        FROM Users u JOIN Roles r ON u.RoleId = r.Id
-                       WHERE u.Email = @email AND u.Password = @password ";
-                object param = new { request.Email, request.Password };
+                       WHERE u.Email = @email ";
+                object param = new { request.Email };
 
-                user = await con.QueryFirstOrDefaultAsync<UserDto>(sql, param);
+                var userWithPassword = await con.QueryFirstOrDefaultAsync<dynamic>(sql, param);
+
+                // Verify password hash
+                if (userWithPassword != null)
+                {
+                    var tempUser = new User { Password = userWithPassword.Password };
+                    var verificationResult = _passwordHasher.VerifyHashedPassword(
+                        tempUser, 
+                        userWithPassword.Password, 
+                        request.Password
+                    );
+
+                    if (verificationResult == PasswordVerificationResult.Success ||
+                        verificationResult == PasswordVerificationResult.SuccessRehashNeeded)
+                    {
+                        user = new UserDto
+                        {
+                            Id = userWithPassword.Id,
+                            Name = userWithPassword.Name,
+                            Email = userWithPassword.Email,
+                            Phone = userWithPassword.Phone,
+                            WalletAmount = userWithPassword.WalletAmount,
+                            RoleId = userWithPassword.RoleId,
+                            RoleName = userWithPassword.RoleName,
+                            TempCartMeta = userWithPassword.TempCartMeta
+                        };
+                    }
+                }
             }
 
             return user;
@@ -80,13 +105,24 @@ namespace FoodOrderingRepository.Implement
         {
             int count = 0;
 
+            // Hash password with PBKDF2 of identity framework
+            var user = new User { Password = request.Password };
+            string hashedPassword = _passwordHasher.HashPassword(user, request.Password);
+
             using(var con = new SqlConnection(_connectionOption.FOOD))
             {
                 string sql =
                     @" INSERT INTO Users (Name, Email, Phone, Password, WalletAmount, RoleId) 
                        VALUES (@Name, @Email, @Phone, @Password, 0, @RoleId) ";
 
-                object param = new { request.Name, request.Email, request.Phone, request.Password, RoleId = RoleEnum.User };
+                object param = new 
+                { 
+                    request.Name, 
+                    request.Email, 
+                    request.Phone, 
+                    Password = hashedPassword,
+                    RoleId = RoleEnum.User 
+                };
                 count = await con.ExecuteAsync(sql, param);
             }
 
@@ -100,10 +136,6 @@ namespace FoodOrderingRepository.Implement
             user.WalletAmount += money;
 
             await _context.SaveChangesAsync();
-        }
-        public Task UpdateAysnc<E>(E request)
-        {
-            throw new NotImplementedException();
         }
 
         public async Task UpdateTempCartMetaAsync(Cart cart, long userId)

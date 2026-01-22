@@ -1,6 +1,6 @@
 using FoodOrderingCore.Context;
 using FoodOrderingPRM392.Extension;
-using FoodOrderingPRM392.Filters;
+using FoodOrderingPRM392.Middlewares;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +25,9 @@ builder.Services.AddAuthentication(option =>
     options.Cookie.HttpOnly = true;
     options.Cookie.Name = "auth_cookie";
     options.SlidingExpiration = false;
-    options.ExpireTimeSpan = new TimeSpan(24, 0, 0);
+    options.ExpireTimeSpan = new TimeSpan(168, 0, 0);
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 
     options.Events.OnRedirectToAccessDenied =
     options.Events.OnRedirectToLogin = async c =>
@@ -41,30 +43,37 @@ builder.Services.AddAuthentication(option =>
     };
 });
 
+// Controllers with optional ExceptionFilter (middleware will handle most exceptions)
+builder.Services.AddControllers().AddNewtonsoftJson();
 
-builder.Services.AddControllers(option => option.Filters.Add<ExceptionFilter>()).AddNewtonsoftJson();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Global Exception Handler (catches all exceptions)
+app.UseGlobalExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-} else
+}
+else
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// HTTPS Redirection (Optional)
 //app.UseHttpsRedirection();
 
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+// 5. Controllers
 app.MapControllers();
 
 app.Run();

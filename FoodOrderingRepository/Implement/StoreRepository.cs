@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using FoodOrderingCore.ConfigurationOptions;
 using FoodOrderingCore.Context;
+using FoodOrderingCore.Data;
 using FoodOrderingCore.Dto;
-using FoodOrderingCore.Request;
 using FoodOrderingRepository.Interface;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
@@ -11,25 +11,40 @@ namespace FoodOrderingRepository.Implement
 {
     public class StoreRepository : IStoreRepository
     {
-        private readonly FoodOrderingContext _context;
         private readonly ConnectionOption connectionOption;
 
-        public StoreRepository (FoodOrderingContext context, IOptions<ConnectionOption> option)
+        public StoreRepository (IOptions<ConnectionOption> option)
         {
-            _context = context;
             connectionOption = option.Value;
         }
 
-        public async Task<IEnumerable<StoreDto>> GetAllFoodStore(StoreFilterRequest request)
+        public async Task<IEnumerable<StoreDto>> GetAllFoodStore()
+        {
+            IEnumerable<StoreDto> list = null;
+
+            using (var con = new SqlConnection(connectionOption.FOOD))
+            {
+                string sql =
+                    @" SELECT Id, TenantId, Name, Address, Latitude, Longitude, ImageSrc 
+                       FROM Stores";
+                list = await con.QueryAsync<StoreDto>(sql);
+            }
+
+            return list;
+        }
+
+        public async Task<IEnumerable<StoreDto>> GetAllFoodStoreByTenant(int tenantId)
         {
             IEnumerable<StoreDto> list = null;
 
             using(var con = new SqlConnection(connectionOption.FOOD))
             {
                 string sql =
-                    @" SELECT Id, Name, Address, Latitude, Longitude, ImageSrc 
-                       FROM Stores ";
-                list = await con.QueryAsync<StoreDto>(sql);
+                    @" SELECT Id, TenantId, Name, Address, Latitude, Longitude, ImageSrc 
+                       FROM Stores 
+                       WHERE TenantId = @tenantId";
+                object param = new { tenantId };
+                list = await con.QueryAsync<StoreDto>(sql, param);
             }
 
             return list;
@@ -42,7 +57,7 @@ namespace FoodOrderingRepository.Implement
             using (var con = new SqlConnection(connectionOption.FOOD))
             {
                 string storeQuery =
-                    @" SELECT Id, Name, Address, Latitude, Longitude, ImageSrc 
+                    @" SELECT Id, TenantId, Name, Address, Latitude, Longitude, ImageSrc 
                        FROM Stores 
                        WHERE Id = @id ; ";
                 string foodStoreQuery =

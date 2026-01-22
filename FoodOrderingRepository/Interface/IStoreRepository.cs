@@ -6,7 +6,8 @@ namespace FoodOrderingRepository.Interface
 {
     public interface IStoreRepository
     {
-        Task<IEnumerable<StoreDto>> GetAllFoodStore(StoreFilterRequest request);
+        Task<IEnumerable<StoreDto>> GetAllFoodStore();
+        Task<IEnumerable<StoreDto>> GetAllFoodStoreByTenant(int tenantId);
         Task<StoreDto> GetStoreDetail(long id);
     }
 }

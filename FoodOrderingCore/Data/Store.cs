@@ -15,6 +15,8 @@ namespace FoodOrderingCore.Data
         public string Longitude { set; get; }
         [Column(TypeName = "varchar(max)")]
         public string ImageSrc { set; get; }
+        public int TenantId { get; set; }
+        public Tenant Tenant { get; set; }
         public ICollection<FoodStore> FoodStores { set; get; }
     }
 }

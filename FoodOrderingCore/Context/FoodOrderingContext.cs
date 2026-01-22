@@ -16,15 +16,21 @@ namespace FoodOrderingCore.Context
         public virtual DbSet<Order> Orders { set; get; }
         public virtual DbSet<OrderDetail> OrderDetails { set; get; }
         public virtual DbSet<FoodType> FoodTypes { set; get; }
+        public virtual DbSet<Tenant> Tenants { set; get; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            // Tenant - Store relationship (1:N)
+            builder.Entity<Store>()
+                .HasOne(s => s.Tenant)
+                .WithMany(t => t.Stores)
+                .HasForeignKey(s => s.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // FoodStore relationships
             builder.Entity<FoodStore>()
                 .HasIndex(fs => new { fs.StoreId, fs.FoodId })
                 .IsUnique(true);
-
-            builder.Entity<OrderDetail>()
-                .HasKey(od => new { od.OrderId, od.FoodStoreId });
 
             builder.Entity<FoodStore>()
                 .HasOne(fs => fs.Store)
@@ -46,6 +52,7 @@ namespace FoodOrderingCore.Context
                 .WithMany(f => f.OrderDetails)
                 .HasForeignKey(od => od.FoodStoreId);
 
+            // User unique email
             builder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique(true);
@@ -55,6 +62,25 @@ namespace FoodOrderingCore.Context
                 new Role { Id = 1, Name = "User" },
                 new Role { Id = 2, Name = "Manager" },
                 new Role { Id = 3, Name = "Admin" }
+            );
+
+            // Seed data for FoodTypes
+            builder.Entity<FoodType>().HasData(
+                new FoodType { Id = 1, Name = "Appetizer" },
+                new FoodType { Id = 2, Name = "Main Course" },
+                new FoodType { Id = 3, Name = "Dessert" },
+                new FoodType { Id = 4, Name = "Beverage" }
+            );
+
+            // Seed data for Tenants
+            builder.Entity<Tenant>().HasData(
+                new Tenant 
+                { 
+                    Id = 1, 
+                    Name = "Default Tenant", 
+                    CreateTime = new DateTime(2025, 1, 16, 0, 0, 0, DateTimeKind.Utc),
+                    UpdateTime = new DateTime(2025, 1, 16, 0, 0, 0, DateTimeKind.Utc)
+                }
             );
 
             base.OnModelCreating(builder);
