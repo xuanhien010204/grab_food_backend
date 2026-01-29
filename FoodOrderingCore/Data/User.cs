@@ -19,5 +19,6 @@ namespace FoodOrderingCore.Data
         public int RoleId { set; get; }
         public Role Role { set; get; }
         public ICollection<Order> Orders { set; get; }
+        public ICollection<WalletTransaction> WalletTransactions { get; set; }
     }
 }
