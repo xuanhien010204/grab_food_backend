@@ -4,6 +4,7 @@ using FoodOrderingCore.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodOrderingPRM392.Migrations
 {
     [DbContext(typeof(FoodOrderingContext))]
-    partial class FoodOrderingContextModelSnapshot : ModelSnapshot
+    [Migration("20260124085429_UpdateWalletTransaction")]
+    partial class UpdateWalletTransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,9 +36,6 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<int>("FoodTypeId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("HasSize")
-                        .HasColumnType("bit");
-
                     b.Property<string>("ImageSrc")
                         .HasColumnType("nvarchar(max)");
 
@@ -52,58 +52,6 @@ namespace FoodOrderingPRM392.Migrations
                     b.ToTable("Foods");
                 });
 
-            modelBuilder.Entity("FoodOrderingCore.Data.FoodSize", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("FoodSizes");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Nhỏ",
-                            Name = "S",
-                            SortOrder = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Vừa",
-                            Name = "M",
-                            SortOrder = 2
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Lớn",
-                            Name = "L",
-                            SortOrder = 3
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Siêu lớn",
-                            Name = "XL",
-                            SortOrder = 4
-                        });
-                });
-
             modelBuilder.Entity("FoodOrderingCore.Data.FoodStore", b =>
                 {
                     b.Property<Guid>("Id")
@@ -113,14 +61,8 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<long>("FoodId")
                         .HasColumnType("bigint");
 
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("bit");
-
                     b.Property<decimal>("Price")
                         .HasColumnType("money");
-
-                    b.Property<int?>("SizeId")
-                        .HasColumnType("int");
 
                     b.Property<long>("StoreId")
                         .HasColumnType("bigint");
@@ -129,11 +71,8 @@ namespace FoodOrderingPRM392.Migrations
 
                     b.HasIndex("FoodId");
 
-                    b.HasIndex("SizeId");
-
-                    b.HasIndex("StoreId", "FoodId", "SizeId")
-                        .IsUnique()
-                        .HasFilter("[SizeId] IS NOT NULL");
+                    b.HasIndex("StoreId", "FoodId")
+                        .IsUnique();
 
                     b.ToTable("FoodStores");
                 });
@@ -429,11 +368,6 @@ namespace FoodOrderingPRM392.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FoodOrderingCore.Data.FoodSize", "Size")
-                        .WithMany("FoodStores")
-                        .HasForeignKey("SizeId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("FoodOrderingCore.Data.Store", "Store")
                         .WithMany("FoodStores")
                         .HasForeignKey("StoreId")
@@ -441,8 +375,6 @@ namespace FoodOrderingPRM392.Migrations
                         .IsRequired();
 
                     b.Navigation("Food");
-
-                    b.Navigation("Size");
 
                     b.Navigation("Store");
                 });
@@ -511,11 +443,6 @@ namespace FoodOrderingPRM392.Migrations
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.Food", b =>
-                {
-                    b.Navigation("FoodStores");
-                });
-
-            modelBuilder.Entity("FoodOrderingCore.Data.FoodSize", b =>
                 {
                     b.Navigation("FoodStores");
                 });

@@ -1,16 +1,12 @@
 ﻿using FoodOrderingCore.Exceptions;
-using FoodOrderingCore.Request;
 using FoodOrderingCore.Response;
 using FoodOrderingRepository.Interface;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FoodOrderingPRM392.Controllers
 {
     [Route("api/stores")]
     [ApiController]
-    //[Authorize]
     public class StoreController : ControllerBase
     {
         private readonly IStoreRepository _storeRepository;

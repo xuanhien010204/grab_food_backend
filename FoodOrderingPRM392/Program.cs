@@ -11,8 +11,14 @@ IConfiguration Configuration = builder.Configuration;
 
 builder.Services.AddDbContext<FoodOrderingContext>(o => o.UseSqlServer(Configuration.GetConnectionString("FOOD"), b => b.MigrationsAssembly("FoodOrderingPRM392")));
 
+// Configure application options (ConnectionStrings, MoMo, etc.)
 builder.Services.ConfigureApplicationOptions(Configuration);
+
+// Configure repositories and services
 builder.Services.ConfigureRepositories();
+
+// Configure HttpClients for external APIs (MoMo, etc.)
+builder.Services.ConfigureHttpClients(Configuration);
 
 builder.Services.AddAuthentication(option =>
 {
@@ -73,7 +79,7 @@ else
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 5. Controllers
+// Controllers
 app.MapControllers();
 
 app.Run();

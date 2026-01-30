@@ -12,6 +12,9 @@ namespace FoodOrderingPRM392.Extension
         {
             services.Configure<ConnectionOption>(config.GetSection("ConnectionStrings"));
 
+            // Configure MoMo payment options
+            services.Configure<MomoOption>(config.GetSection("MoMo"));
+
             return services;
         }
 
@@ -28,6 +31,25 @@ namespace FoodOrderingPRM392.Extension
             services.AddScoped<IFoodStoreRepository, FoodStoreRepository>();
             services.AddScoped<ITenantRepository, TenantRepository>();
             services.AddScoped<IFoodRepository, FoodRepository>();
+
+            // Register wallet services
+            services.AddScoped<IWalletService, WalletService>();
+
+            return services;
+        }
+
+        // Configure HttpClient for external API calls
+        public static IServiceCollection ConfigureHttpClients(this IServiceCollection services, IConfiguration config)
+        {
+            // Configure MoMo HttpClient
+            services.AddHttpClient("MoMo", client =>
+            {
+                var momoEndpoint = config["MoMo:ApiEndpoint"] ?? "https://test-payment.momo.vn";
+                client.BaseAddress = new Uri(momoEndpoint);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
             return services;
         }
     }
