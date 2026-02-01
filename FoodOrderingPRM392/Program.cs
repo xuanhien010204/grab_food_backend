@@ -32,8 +32,10 @@ builder.Services.AddAuthentication(option =>
     options.Cookie.Name = "auth_cookie";
     options.SlidingExpiration = false;
     options.ExpireTimeSpan = new TimeSpan(168, 0, 0);
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+    // Allow both HTTP and HTTPS for Somee hosting (HTTP only)
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
     options.Events.OnRedirectToAccessDenied =
     options.Events.OnRedirectToLogin = async c =>

@@ -1,7 +1,6 @@
 ﻿using FoodOrderingCore.Request;
 using FoodOrderingCore.Response;
 using FoodOrderingRepository.Interface;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FoodOrderingPRM392.Controllers

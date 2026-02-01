@@ -23,7 +23,7 @@ namespace FoodOrderingPRM392.Extension
             // Register PasswordHasher for password hashing
             services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-            // Register dependency inject
+            // Core repositories
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IStoreRepository, StoreRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
@@ -32,8 +32,15 @@ namespace FoodOrderingPRM392.Extension
             services.AddScoped<ITenantRepository, TenantRepository>();
             services.AddScoped<IFoodRepository, FoodRepository>();
 
-            // Register wallet services
+            // Wallet services
             services.AddScoped<IWalletService, WalletService>();
+
+            // New feature repositories
+            services.AddScoped<IDeliveryAddressRepository, DeliveryAddressRepository>();
+            services.AddScoped<IReviewRepository, ReviewRepository>();
+            services.AddScoped<IVoucherRepository, VoucherRepository>();
+            services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
 
             return services;
         }
