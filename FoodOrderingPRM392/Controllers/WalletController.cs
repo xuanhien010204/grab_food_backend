@@ -1,17 +1,15 @@
 using FoodOrderingCore.ConfigurationOptions;
 using FoodOrderingCore.Constants;
-using FoodOrderingCore.Data;
 using FoodOrderingCore.Exceptions;
 using FoodOrderingCore.Helpers;
 using FoodOrderingCore.Request;
 using FoodOrderingCore.Response;
+using FoodOrderingPRM392.Extensions;
 using FoodOrderingRepository.Implement;
 using FoodOrderingRepository.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using System.Net.NetworkInformation;
-using System.Security.Claims;
 
 namespace FoodOrderingPRM392.Controllers
 {
@@ -38,7 +36,10 @@ namespace FoodOrderingPRM392.Controllers
         [Authorize]
         public async Task<IActionResult> GetBalance()
         {
-            var userId = GetCurrentUserId();
+            var userId = User.GetUserId();
+            if (userId == null)
+                return Unauthorized(new ParentResponse { Message = WalletMessages.Unauthorized });
+
             var wallet = await _walletService.GetWalletBalanceAsync(userId.Value);
             return Ok(new ParentResultResponse { Message = WalletMessages.GetBalanceSuccess, Result = wallet });
         }
@@ -49,10 +50,12 @@ namespace FoodOrderingPRM392.Controllers
         [Authorize]
         public async Task<IActionResult> Deposit([FromBody] DepositRequest request)
         {
-            var userId = GetCurrentUserId();
+            var userId = User.GetUserId();
+            if (userId == null)
+                return Unauthorized(new ParentResponse { Message = WalletMessages.Unauthorized });
             try
             {
-                _logger.LogInformation("Creating deposit: UserId={UserId}, Amount={Amount}", 
+                _logger.LogInformation("Creating deposit: UserId={UserId}, Amount={Amount}",
                     userId, request.Amount);
 
                 var response = await _walletService.CreateDepositRequestAsync(request, userId.Value);
@@ -177,7 +180,10 @@ namespace FoodOrderingPRM392.Controllers
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20)
         {
-            var userId = GetCurrentUserId();
+            var userId = User.GetUserId();
+            if (userId == null)
+                return Unauthorized(new ParentResponse { Message = WalletMessages.Unauthorized });
+
             pageNumber = Math.Max(1, pageNumber);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
@@ -200,7 +206,10 @@ namespace FoodOrderingPRM392.Controllers
         [Authorize]
         public async Task<IActionResult> CheckBalance(decimal amount)
         {
-            var userId = GetCurrentUserId();
+            var userId = User.GetUserId();
+            if (userId == null)
+                return Unauthorized(new ParentResponse { Message = WalletMessages.Unauthorized });
+
             var hasSufficient = await _walletService.HasSufficientBalanceAsync(userId.Value, amount);
 
             return Ok(new ParentResultResponse
@@ -215,13 +224,7 @@ namespace FoodOrderingPRM392.Controllers
                 }
             });
         }
-        protected long? GetCurrentUserId()
-        {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            if (userIdClaim != null && long.TryParse(userIdClaim.Value, out var userId))
-                return userId;
-            return null;
-        }
+
         // Verify IPN signature from MoMo
         private bool VerifyIpnSignature(MomoIpnRequest request)
         {

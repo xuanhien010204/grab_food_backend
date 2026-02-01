@@ -185,8 +185,53 @@ namespace FoodOrderingPRM392.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeliveryAddress")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("DeliveryFee")
+                        .HasColumnType("money");
+
+                    b.Property<decimal>("Discount")
+                        .HasColumnType("money");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("PurchaseDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("RecipientName")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RecipientPhone")
+                        .HasColumnType("varchar(15)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<long>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("money");
 
                     b.Property<decimal>("Total")
                         .HasColumnType("money");
@@ -196,7 +241,11 @@ namespace FoodOrderingPRM392.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("Status");
+
+                    b.HasIndex("StoreId", "Status");
+
+                    b.HasIndex("UserId", "PurchaseDate");
 
                     b.ToTable("Orders");
                 });
@@ -272,6 +321,9 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<string>("ImageSrc")
                         .HasColumnType("varchar(max)");
 
+                    b.Property<bool>("IsOpen")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Latitude")
                         .HasColumnType("varchar(20)");
 
@@ -280,6 +332,15 @@ namespace FoodOrderingPRM392.Migrations
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("varchar(15)");
+
+                    b.Property<decimal>("Rating")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ReviewCount")
+                        .HasColumnType("int");
 
                     b.Property<int>("TenantId")
                         .HasColumnType("int");
@@ -449,11 +510,19 @@ namespace FoodOrderingPRM392.Migrations
 
             modelBuilder.Entity("FoodOrderingCore.Data.Order", b =>
                 {
+                    b.HasOne("FoodOrderingCore.Data.Store", "Store")
+                        .WithMany("Orders")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("FoodOrderingCore.Data.User", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Store");
 
                     b.Navigation("User");
                 });
@@ -543,6 +612,8 @@ namespace FoodOrderingPRM392.Migrations
             modelBuilder.Entity("FoodOrderingCore.Data.Store", b =>
                 {
                     b.Navigation("FoodStores");
+
+                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.Tenant", b =>
