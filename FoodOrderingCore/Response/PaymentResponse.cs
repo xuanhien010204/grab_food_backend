@@ -1,6 +1,5 @@
 namespace FoodOrderingCore.Response
 {
-    // Response to client after creating MoMo payment
     public class PaymentResponse
     {
         public string OrderId { get; set; }

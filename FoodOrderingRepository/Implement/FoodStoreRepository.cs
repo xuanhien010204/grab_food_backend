@@ -47,10 +47,11 @@ namespace FoodOrderingRepository.Implement
                 string sql =
                     @" SELECT fs.Id, fs.StoreId, fs.FoodId, fs.Price, 
                               f.Id, f.Name, f.FoodTypeId, ft.Name 'FoodTypeName', f.ImageSrc, f.IsAvailable,
-                              s.Id, s.Name
+                              s.Id, s.Name, fz.Id, fz.Name, fz.SortOrder
                        FROM FoodStores fs JOIN Foods f ON fs.FoodId = f.Id
                             JOIN FoodTypes ft ON f.FoodTypeId = ft.Id 
                             JOIN Stores s ON fs.StoreId = s.Id 
+                            JOIN FoodSizes fz ON fs.SizeId = fz.Id
                        WHERE 1=1 ";
 
                 if (!string.IsNullOrEmpty(request.FoodName))
