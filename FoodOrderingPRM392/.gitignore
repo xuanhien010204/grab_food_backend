@@ -409,8 +409,8 @@ FodyWeavers.xsd
 # =============================================================================
 
 # ASP.NET Core launch settings (local only)
-**/Properties/launchSettings.json
-[Pp]roperties/launchSettings.json
+**/Properties/
+[Pp]roperties/
 
 # App settings with secrets (keep templates only)
 appsettings.Development.json
