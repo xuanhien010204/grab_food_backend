@@ -1,723 +1,865 @@
-# 🍔 GrabFood Clone - Food Ordering API
+# 🍔 GrabFood Clone - Food Ordering Backend API
 
-A comprehensive food ordering backend API built with ASP.NET Core, featuring wallet management, MoMo payment integration, order management, reviews, favorites, and notifications.
+> A full-featured food ordering platform backend built with **ASP.NET Core (.NET 10)**, inspired by GrabFood. Supports multi-tenant stores, wallet payments via MoMo, order lifecycle management, reviews, vouchers, favorites, notifications, and more.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Database Schema](#database-schema)
-- [API Endpoints](#api-endpoints)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [Authentication](#authentication)
-- [Payment Integration](#payment-integration)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Database Schema](#-database-schema)
+- [Authentication](#-authentication)
+- [API Reference](#-api-reference)
+- [Enums](#-enums)
+- [Error Handling](#-error-handling)
+- [MoMo Payment Integration](#-momo-payment-integration)
+- [Getting Started](#-getting-started)
+- [Deployment](#-deployment)
 
 ---
 
-## 🎯 Overview
-
-**GrabFood Clone** is a full-featured food ordering platform backend that supports:
-- Multi-tenant restaurant management
-- User authentication with cookie-based sessions
-- Digital wallet with MoMo payment integration
-- Complete order lifecycle management
-- Reviews and ratings system
-- Favorites/Wishlist functionality
-- Push notification system
-- Voucher/Promotion management
-
----
-
-## 🏗️ Architecture
-
-The solution follows a **Clean Architecture** pattern with 3 layers:
+## 🏗 Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FoodOrderingPRM392 (API)                      │
-│  - Controllers (HTTP endpoints)                                  │
-│  - Middlewares (Exception handling)                              │
-│  - Extensions (DI configuration)                                 │
-│  - Filters (Exception filters)                                   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                FoodOrderingRepository (Business Logic)           │
-│  - Interfaces (Repository contracts)                             │
-│  - Implementations (Business logic + Data access)                │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FoodOrderingCore (Domain)                     │
-│  - Entities (Data models)                                        │
-│  - DTOs (Data transfer objects)                                  │
-│  - Enums (Status codes, types)                                   │
-│  - Requests/Responses (API contracts)                            │
-│  - Exceptions (Custom exceptions)                                │
-│  - Helpers (Utilities)                                           │
-│  - Constants (Messages)                                          │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                    Mobile App (Client)                │
+└──────────────────────┬───────────────────────────────┘
+                       │ HTTP REST
+┌──────────────────────▼───────────────────────────────┐
+│               FoodOrderingPRM392 (API Layer)         │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐ │
+│  │ Controllers  │  │ Middlewares   │  │ Extensions  │ │
+│  │ (13 total)   │  │ (Global Ex.) │  │ (DI, Auth)  │ │
+│  └──────┬──────┘  └──────────────┘  └─────────────┘ │
+└─────────┼────────────────────────────────────────────┘
+          │ Interfaces
+┌─────────▼────────────────────────────────────────────┐
+│           FoodOrderingRepository (Service Layer)      │
+│  ┌──────────────────┐  ┌───────────────────────────┐ │
+│  │ Interface/ (14)   │  │ Implement/ (13)           │ │
+│  └──────────────────┘  └───────────────────────────┘ │
+└─────────┬────────────────────────────────────────────┘
+          │ EF Core + Dapper
+┌─────────▼────────────────────────────────────────────┐
+│              FoodOrderingCore (Domain Layer)          │
+│  ┌────────┐ ┌──────┐ ┌──────────┐ ┌───────────────┐ │
+│  │ Data/  │ │ Dto/ │ │ Request/ │ │ Response/     │ │
+│  │ Enum/  │ │Const/│ │ Helpers/ │ │ Exceptions/   │ │
+│  └────────┘ └──────┘ └──────────┘ └───────────────┘ │
+└──────────────────────────────────────────────────────┘
+          │
+┌─────────▼────────────────────────────────────────────┐
+│              SQL Server Database                      │
+│              (grab-food.mssql.somee.com)              │
+└──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠 Tech Stack
 
-| Category | Technology |
-|----------|------------|
+| Component | Technology |
+|-----------|------------|
 | **Framework** | .NET 10, ASP.NET Core |
-| **Database** | SQL Server |
 | **ORM** | Entity Framework Core + Dapper |
-| **Authentication** | Cookie Authentication |
-| **Payment** | MoMo Payment Gateway |
-| **API Documentation** | Swagger/OpenAPI |
-| **Hosting** | Somee.com |
-
----
-
-## 🗄️ Database Schema
-
-### Core Entities
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        ENTITY RELATIONSHIPS                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  User ─────┬──── Orders ────── OrderDetails ──── FoodStore      │
-│            │                                          │          │
-│            ├──── WalletTransactions                   │          │
-│            │                                          │          │
-│            ├──── DeliveryAddresses                    ▼          │
-│            │                                       Food          │
-│            ├──── Reviews ◄───── Store ◄───── Tenant             │
-│            │                      │                              │
-│            ├──── Favorites        ├──── FoodStore               │
-│            │                      │                              │
-│            ├──── Notifications    └──── Vouchers                │
-│            │                                                     │
-│            └──── VoucherUsages                                  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Entity Details
-
-#### **User**
-```csharp
-- Id: long (PK)
-- Name: string
-- Email: string (unique)
-- Phone: string
-- Password: string (hashed)
-- WalletAmount: decimal
-- AvatarUrl: string
-- IsActive: bool
-- RoleId: int (FK → Role)
-- CreatedAt: DateTime
-- LastLoginAt: DateTime?
-```
-
-#### **Store**
-```csharp
-- Id: long (PK)
-- Name: string
-- Description: string
-- Address: string
-- Latitude/Longitude: string
-- ImageSrc: string
-- Phone: string
-- OpenTime/CloseTime: string
-- IsOpen: bool
-- IsActive: bool
-- Rating: decimal (1-5)
-- ReviewCount: int
-- MinOrderAmount: decimal
-- DeliveryFee: decimal
-- EstimatedDeliveryTime: int (minutes)
-- TenantId: int (FK → Tenant)
-```
-
-#### **Food**
-```csharp
-- Id: long (PK)
-- Name: string
-- Description: string
-- ImageSrc: string
-- FoodTypeId: int (FK → FoodType)
-- IsAvailable: bool
-- HasSize: bool
-- Rating: decimal
-- ReviewCount: int
-```
-
-#### **FoodStore** (Store-specific pricing)
-```csharp
-- Id: Guid (PK)
-- StoreId: long (FK → Store)
-- FoodId: long (FK → Food)
-- SizeId: int? (FK → FoodSize)
-- Price: decimal
-- IsAvailable: bool
-```
-
-#### **Order**
-```csharp
-- Id: Guid (PK)
-- UserId: long (FK → User)
-- StoreId: long (FK → Store)
-- PurchaseDate: DateTime
-- Status: OrderStatus (enum)
-- PaymentMethod: PaymentMethod (enum)
-- PaymentStatus: PaymentStatus (enum)
-- SubTotal: decimal
-- DeliveryFee: decimal
-- Discount: decimal
-- Total: decimal
-- DeliveryAddress: string
-- RecipientPhone: string
-- RecipientName: string
-- Note: string
-- VoucherCode: string
-- CancelReason: string
-- ConfirmedAt/CompletedAt/CancelledAt: DateTime?
-```
-
-#### **WalletTransaction**
-```csharp
-- Id: Guid (PK)
-- UserId: long (FK → User)
-- TransactionType: TransactionType (enum)
-- Amount: decimal
-- BalanceBefore: decimal
-- BalanceAfter: decimal
-- Status: TransactionStatus (enum)
-- Description: string
-- ExternalReference: string
-- PaymentMethod: string
-- CreatedAt: DateTime
-- CompletedAt: DateTime?
-```
-
-### Enums
-
-#### **OrderStatus**
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | Pending | Order placed, awaiting confirmation |
-| 1 | Confirmed | Store confirmed the order |
-| 2 | Preparing | Food is being prepared |
-| 3 | Ready | Ready for pickup/delivery |
-| 4 | Delivering | Out for delivery |
-| 5 | Completed | Order delivered |
-| 6 | Cancelled | Order cancelled |
-
-#### **PaymentMethod**
-| Value | Name | Description |
-|-------|------|-------------|
-| 1 | Wallet | Pay from digital wallet |
-| 2 | CashOnDelivery | Pay on delivery |
-| 3 | MoMo | Pay via MoMo |
-
-#### **PaymentStatus**
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | Unpaid | Not yet paid |
-| 1 | Paid | Payment completed |
-| 2 | Refunded | Payment refunded |
-| 3 | Failed | Payment failed |
-
-#### **TransactionType**
-| Value | Name | Description |
-|-------|------|-------------|
-| 1 | Deposit | Add money to wallet |
-| 2 | Payment | Pay for order |
-| 3 | Refund | Refund from cancelled order |
-
----
-
-## 🔌 API Endpoints
-
-### 👤 Authentication (`/api/users`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/login` | User login | ❌ |
-| POST | `/register` | User registration | ❌ |
-| GET | `/profile` | Get user profile | ✅ |
-| GET | `/sign-out` | Logout | ✅ |
-| PUT | `/top-up` | Add money (legacy) | ✅ |
-| PATCH | `/temp-data` | Save cart data | ✅ |
-| DELETE | `/temp-data` | Clear cart data | ✅ |
-
-### 💰 Wallet (`/api/wallet`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/balance` | Get wallet balance | ✅ |
-| POST | `/deposit` | Create MoMo deposit | ✅ |
-| POST | `/momo/ipn` | MoMo IPN webhook | ❌ |
-| GET | `/momo/return` | MoMo return URL | ❌ |
-| GET | `/transactions` | Transaction history | ✅ |
-| GET | `/check-balance/{amount}` | Check balance | ✅ |
-
-### 📦 Orders (`/api/orders`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/` | Create new order | ✅ |
-| GET | `/{id}` | Get order details | ✅ |
-| GET | `/history` | Get order history | ✅ |
-| GET | `/store/{storeId}` | Get store orders | ✅ |
-| PUT | `/{id}/status` | Update order status | ✅ |
-| POST | `/{id}/cancel` | Cancel order | ✅ |
-
-### 🏪 Stores (`/api/stores`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | Get all stores | ❌ |
-| GET | `/{id}` | Get store by ID | ❌ |
-| GET | `/filter` | Filter stores | ❌ |
-| POST | `/` | Create store | ✅ |
-| PUT | `/{id}` | Update store | ✅ |
-
-### 🍕 Foods (`/api/foods`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | Get all foods | ❌ |
-| GET | `/{id}` | Get food by ID | ❌ |
-| POST | `/` | Create food | ✅ |
-| PUT | `/{id}` | Update food | ✅ |
-
-### 🛒 Food Store Items (`/api/food-stores`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/store/{storeId}` | Get store menu | ❌ |
-| GET | `/{id}` | Get item details | ❌ |
-| POST | `/` | Add menu item | ✅ |
-| PUT | `/{id}` | Update menu item | ✅ |
-
-### 📍 Delivery Addresses (`/api/addresses`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | Get all addresses | ✅ |
-| GET | `/{id}` | Get address by ID | ✅ |
-| GET | `/default` | Get default address | ✅ |
-| POST | `/` | Create address | ✅ |
-| PUT | `/{id}` | Update address | ✅ |
-| PUT | `/{id}/default` | Set as default | ✅ |
-| DELETE | `/{id}` | Delete address | ✅ |
-
-### ⭐ Reviews (`/api/reviews`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/{id}` | Get review by ID | ❌ |
-| GET | `/store/{storeId}` | Get store reviews | ❌ |
-| GET | `/food/{foodId}` | Get food reviews | ❌ |
-| GET | `/my-reviews` | Get my reviews | ✅ |
-| GET | `/can-review/{orderId}` | Check can review | ✅ |
-| POST | `/` | Create review | ✅ |
-| POST | `/{id}/reply` | Store reply | ✅ |
-| DELETE | `/{id}` | Delete review | ✅ |
-
-### 🎫 Vouchers (`/api/vouchers`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/{id}` | Get voucher by ID | ❌ |
-| GET | `/code/{code}` | Get by code | ❌ |
-| GET | `/active` | Get active vouchers | ❌ |
-| GET | `/available` | Get available for user | ✅ |
-| POST | `/` | Create voucher | 🔐 Admin |
-| POST | `/apply` | Apply voucher | ✅ |
-| PUT | `/{id}` | Update voucher | 🔐 Admin |
-| DELETE | `/{id}` | Deactivate voucher | 🔐 Admin |
-
-### ❤️ Favorites (`/api/favorites`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/stores` | Get favorite stores | ✅ |
-| GET | `/foods` | Get favorite foods | ✅ |
-| GET | `/stores/{id}/check` | Is store favorited | ✅ |
-| GET | `/foods/{id}/check` | Is food favorited | ✅ |
-| POST | `/stores/{id}` | Add store favorite | ✅ |
-| POST | `/foods/{id}` | Add food favorite | ✅ |
-| DELETE | `/stores/{id}` | Remove store favorite | ✅ |
-| DELETE | `/foods/{id}` | Remove food favorite | ✅ |
-
-### 🔔 Notifications (`/api/notifications`)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/` | Get notifications | ✅ |
-| GET | `/unread-count` | Get unread count | ✅ |
-| PUT | `/{id}/read` | Mark as read | ✅ |
-| PUT | `/read-all` | Mark all read | ✅ |
-| DELETE | `/{id}` | Delete notification | ✅ |
-
----
-
-## 🌟 Features
-
-### 1. 💳 Digital Wallet System
-- **Balance Management**: Track user wallet balance
-- **MoMo Integration**: Deposit via MoMo payment gateway
-- **Transaction History**: Full audit trail of all transactions
-- **Real-time Updates**: IPN webhook for instant balance updates
-
-### 2. 📦 Order Management
-- **Order Lifecycle**: Pending → Confirmed → Preparing → Ready → Delivering → Completed
-- **Multiple Payment Methods**: Wallet, COD, MoMo
-- **Order Cancellation**: With refund support
-- **Order History**: Full order history with filtering
-
-### 3. 🏪 Multi-Tenant Store System
-- **Tenant Management**: Multiple brands/tenants
-- **Store Management**: Each tenant can have multiple stores
-- **Menu Management**: Store-specific pricing and availability
-- **Operating Hours**: Open/close time tracking
-
-### 4. ⭐ Reviews & Ratings
-- **Order Reviews**: Review after order completion
-- **Star Ratings**: 1-5 star ratings
-- **Image Support**: Attach images to reviews
-- **Store Reply**: Stores can reply to reviews
-- **Statistics**: Average rating and review count
-
-### 5. 🎫 Voucher System
-- **Voucher Types**: Percentage, Fixed Amount, Free Shipping
-- **Usage Limits**: Total and per-user limits
-- **Store-Specific**: Platform-wide or store-specific vouchers
-- **Validity Period**: Start and end dates
-
-### 6. ❤️ Favorites
-- **Store Favorites**: Save favorite stores
-- **Food Favorites**: Save favorite food items
-- **Quick Access**: Easy reordering from favorites
-
-### 7. 🔔 Notifications
-- **Order Updates**: Status change notifications
-- **Wallet Updates**: Deposit/payment notifications
-- **Promotions**: Voucher and promotion alerts
-- **Read Status**: Mark as read functionality
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- .NET 10 SDK
-- SQL Server
-- Visual Studio 2022 / VS Code
-
-### Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/xuanhien010204/grab_food_backend.git
-cd FoodOrderingPRM392
-```
-
-2. **Update connection string** in `appsettings.json`:
-```json
-{
-  "ConnectionStrings": {
-    "FOOD": "Your_Connection_String_Here"
-  }
-}
-```
-
-3. **Run database migrations**:
-```bash
-dotnet ef database update --project FoodOrderingPRM392
-```
-
-4. **Or run SQL scripts manually**:
-```
-FoodOrderingPRM392/Migrations/Scripts/AddOrderStatusAndPayment.sql
-FoodOrderingPRM392/Migrations/Scripts/AddAllNewFeatures.sql
-```
-
-5. **Run the application**:
-```bash
-dotnet run --project FoodOrderingPRM392
-```
-
-6. **Access Swagger UI**:
-```
-https://localhost:5001/swagger
-```
-
----
-
-## ⚙️ Configuration
-
-### appsettings.json
-
-```json
-{
-  "ConnectionStrings": {
-    "FOOD": "Server=...;Database=grab-food;..."
-  },
-  "MoMo": {
-    "PartnerCode": "MOMOBKUN20180529",
-    "AccessKey": "your_access_key",
-    "SecretKey": "your_secret_key",
-    "ApiEndpoint": "https://test-payment.momo.vn",
-    "NotifyUrl": "https://your-domain/api/wallet/momo/ipn",
-    "ReturnUrl": "https://your-domain/api/wallet/momo/return"
-  }
-}
-```
+| **Database** | SQL Server (Somee.com hosting) |
+| **Authentication** | Cookie-based (ASP.NET Core Identity Cookies) |
+| **Payment** | MoMo Payment Gateway (Test Environment) |
+| **Serialization** | Newtonsoft.Json |
+| **Architecture** | 3-Layer (API → Repository → Core) |
+| **Patterns** | Repository Pattern, Global Exception Middleware |
 
 ---
 
 ## 📁 Project Structure
 
 ```
-FoodOrderingPRM392/
-├── FoodOrderingCore/              # Domain Layer
-│   ├── ConfigurationOptions/      # App settings classes
-│   │   ├── ConnectionOption.cs
-│   │   └── MomoOption.cs
-│   ├── Constants/                 # Message constants
-│   │   ├── ResponseMessages.cs
-│   │   ├── OrderMessages.cs
-│   │   ├── WalletMessages.cs
-│   │   └── FeatureMessages.cs
-│   ├── Context/                   # EF Core DbContext
-│   │   └── FoodOrderingContext.cs
-│   ├── Data/                      # Entity models
-│   │   ├── User.cs
-│   │   ├── Store.cs
-│   │   ├── Food.cs
-│   │   ├── FoodStore.cs
-│   │   ├── Order.cs
-│   │   ├── OrderDetail.cs
-│   │   ├── WalletTransaction.cs
-│   │   ├── DeliveryAddress.cs
-│   │   ├── Review.cs
-│   │   ├── Voucher.cs
-│   │   ├── Favorite.cs
-│   │   └── Notification.cs
-│   ├── Dto/                       # Data Transfer Objects
-│   ├── Enum/                      # Enumerations
-│   ├── Exceptions/                # Custom exceptions
-│   ├── Helpers/                   # Utility classes
-│   ├── Request/                   # API request models
-│   └── Response/                  # API response models
+FoodOrderingPRM392/                          # Solution Root
 │
-├── FoodOrderingRepository/        # Business Logic Layer
-│   ├── Interface/                 # Repository contracts
-│   │   ├── IUserRepository.cs
-│   │   ├── IStoreRepository.cs
-│   │   ├── IOrderRepository.cs
-│   │   ├── IWalletService.cs
-│   │   ├── IDeliveryAddressRepository.cs
-│   │   ├── IReviewRepository.cs
-│   │   ├── IVoucherRepository.cs
-│   │   ├── IFavoriteRepository.cs
-│   │   └── INotificationRepository.cs
-│   └── Implement/                 # Repository implementations
+├── FoodOrderingPRM392/                      # 🌐 API Layer
+│   ├── Controllers/
+│   │   ├── UserController.cs                # Auth & Profile
+│   │   ├── StoreController.cs               # Store listing & detail
+│   │   ├── FoodController.cs                # Food CRUD (Admin/Manager)
+│   │   ├── FoodTypeController.cs            # Food categories
+│   │   ├── FoodStoreController.cs           # Menu (Food+Store+Size)
+│   │   ├── TenantController.cs              # Multi-tenant management
+│   │   ├── OrderController.cs               # Order lifecycle
+│   │   ├── WalletController.cs              # Wallet & MoMo payment
+│   │   ├── DeliveryAddressController.cs     # User addresses
+│   │   ├── ReviewController.cs              # Reviews & ratings
+│   │   ├── VoucherController.cs             # Voucher management
+│   │   ├── FavoriteController.cs            # Favorites
+│   │   └── NotificationController.cs        # Notifications
+│   ├── Extension/
+│   │   └── ServiceCollectionExtension.cs    # DI registration
+│   ├── Helps/
+│   │   └── ClaimsPrincipalExtensions.cs     # User.GetUserId()
+│   ├── Middlewares/
+│   │   ├── GlobalExceptionMiddleware.cs     # Global error handler
+│   │   └── MiddlewareExtensions.cs
+│   ├── Filters/
+│   │   └── ExceptionFilter.cs
+│   ├── Migrations/
+│   ├── Program.cs
+│   └── appsettings.json
 │
-├── FoodOrderingPRM392/            # API Layer
-│   ├── Controllers/               # API controllers
-│   │   ├── UserController.cs
-│   │   ├── WalletController.cs
-│   │   ├── OrderController.cs
-│   │   ├── StoreController.cs
-│   │   ├── FoodController.cs
-│   │   ├── FoodStoreController.cs
-│   │   ├── DeliveryAddressController.cs
-│   │   ├── ReviewController.cs
-│   │   ├── VoucherController.cs
-│   │   ├── FavoriteController.cs
-│   │   └── NotificationController.cs
-│   ├── Extension/                 # DI extensions
-│   ├── Extensions/                # Helper extensions
-│   ├── Middlewares/               # Global middlewares
-│   ├── Filters/                   # Exception filters
-│   ├── Migrations/                # EF Core migrations
-│   │   └── Scripts/               # SQL scripts
-│   ├── Program.cs                 # App entry point
-│   └── appsettings.json          # Configuration
+├── FoodOrderingRepository/                  # 📦 Service Layer
+│   ├── Interface/                           # 14 interfaces
+│   └── Implement/                           # 13 implementations
+│
+└── FoodOrderingCore/                        # 🎯 Domain Layer
+    ├── Data/              # 15 entities
+    ├── Dto/               # DTOs
+    ├── Request/           # Request models
+    ├── Response/          # Response models
+    ├── Enum/              # 6 enum types
+    ├── Constants/         # Message constants
+    ├── Helpers/           # MomoPaymentHelper
+    ├── Exceptions/        # Custom exceptions
+    ├── Context/           # FoodOrderingContext
+    ├── Extensions/        # JsonConvertExtension
+    └── ConfigurationOptions/
 ```
+
+---
+
+## 🗄 Database Schema
+
+### Entities Overview
+
+| Entity | PK Type | Description |
+|--------|---------|-------------|
+| `User` | `long` | User accounts with wallet |
+| `Role` | `int` | Roles (User, Manager, Admin) |
+| `Tenant` | `int` | Multi-tenant groups |
+| `Store` | `long` | Food stores with location, rating |
+| `Food` | `long` | Food items with type |
+| `FoodSize` | `int` | Sizes (S, M, L, XL) |
+| `FoodType` | `int` | Categories (Appetizer, Main, Dessert, Beverage) |
+| `FoodStore` | `Guid` | Menu: Food + Store + Size + Price |
+| `Order` | `Guid` | Orders with status, payment, delivery |
+| `OrderDetail` | Composite | Order items (OrderId + FoodStoreId) |
+| `WalletTransaction` | `Guid` | Wallet deposit/payment/refund records |
+| `DeliveryAddress` | `long` | Saved delivery addresses |
+| `Review` | `Guid` | Reviews with rating (1-5), images, reply |
+| `Voucher` | `Guid` | Discount vouchers (percent/fixed/free shipping) |
+| `VoucherUsage` | `Guid` | Voucher usage tracking per user per order |
+| `Favorite` | `long` | Favorite stores and foods |
+| `Notification` | `Guid` | In-app notifications |
+
+### Key Relationships
+
+| Relationship | Type | Delete Behavior |
+|-------------|------|-----------------|
+| Tenant → Store | 1:N | Cascade |
+| Store → FoodStore | 1:N | — |
+| Food → FoodStore | 1:N | — |
+| FoodSize → FoodStore | 1:N | SetNull |
+| FoodStore → OrderDetail | 1:N | — |
+| User → Order | 1:N | — |
+| Store → Order | 1:N | NoAction |
+| Order → Review | 1:1 | NoAction |
+| User → WalletTransaction | 1:N | NoAction |
+| User → DeliveryAddress | 1:N | Cascade |
+| User → Favorite | 1:N | Cascade |
+| Store → Favorite | 1:N | Cascade |
+| User → Notification | 1:N | Cascade |
+| Store → Voucher | 1:N | Cascade |
+| Voucher → VoucherUsage | 1:N | Cascade |
+| User → Review | 1:N | Cascade |
+| Store → Review | 1:N | NoAction |
+
+### Unique Constraints
+
+| Entity | Unique Columns |
+|--------|---------------|
+| `User` | `Email` |
+| `FoodStore` | `(StoreId, FoodId, SizeId)` |
+| `Voucher` | `Code` |
+| `Favorite` | `(UserId, StoreId)` and `(UserId, FoodId)` |
+
+### Seed Data
+
+| Entity | Values |
+|--------|--------|
+| **Roles** | `1: User`, `2: Manager`, `3: Admin` |
+| **FoodTypes** | `1: Appetizer`, `2: Main Course`, `3: Dessert`, `4: Beverage` |
+| **FoodSizes** | `1: S (Nhỏ)`, `2: M (Vừa)`, `3: L (Lớn)`, `4: XL (Siêu lớn)` |
+| **Tenants** | `1: Default Tenant` |
 
 ---
 
 ## 🔐 Authentication
 
-The API uses **Cookie-based Authentication** with the following setup:
+Cookie-based authentication using ASP.NET Core Identity Cookies.
 
-### Login Flow
-1. User calls `POST /api/users/login` with email/password
-2. Server validates credentials
-3. Server creates authentication cookie with claims
-4. Cookie is sent with subsequent requests
+| Setting | Value |
+|---------|-------|
+| Cookie Name | `auth_cookie` |
+| Expiration | 168 hours (7 days) |
+| HttpOnly | `true` |
+| SameSite | `Lax` |
+| Secure Policy | `SameAsRequest` |
+| Sliding Expiration | `false` |
 
 ### Claims in Cookie
-```csharp
-- ClaimTypes.NameIdentifier  → User ID
-- ClaimTypes.Email           → Email
-- ClaimTypes.MobilePhone     → Phone
-- ClaimTypes.Role            → Role name
-- "WalletAmount"             → Wallet balance
-- "RoleId"                   → Role ID
+
+| Claim | ClaimType |
+|-------|-----------|
+| User ID | `ClaimTypes.NameIdentifier` |
+| Email | `ClaimTypes.Email` |
+| Phone | `ClaimTypes.MobilePhone` |
+| Role Name | `ClaimTypes.Role` |
+| Role ID | `"RoleId"` |
+
+### Role Permissions
+
+| Role | ID | Access |
+|------|----|--------|
+| **User** | 1 | Profile, orders, wallet, addresses, reviews, favorites, notifications |
+| **Manager** | 2 | + Food, store, voucher management |
+| **Admin** | 3 | + Full system access, tenant CRUD, delete operations |
+
+---
+
+## 📡 API Reference
+
+> **Base URL:** `http://grab-food.somee.com`
+>
+> **Response Format:**
+> ```json
+> { "message": "string", "result": { ... } }
+> ```
+
+---
+
+### 1. User API
+
+**Base:** `/api/users`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/login` | ❌ | Login with email & password |
+| `POST` | `/register` | ❌ | Register new account |
+| `GET` | `/profile` | ✅ | Get current user profile |
+| `GET` | `/sign-out` | ✅ | Sign out (clear cookie) |
+| `PATCH` | `/temp-data` | ✅ | Save temporary cart data |
+| `DELETE` | `/temp-data` | ✅ | Clear temporary cart data |
+
+**Login:**
+```json
+// POST /api/users/login
+{ "email": "user@example.com", "password": "string" }
+
+// Response
+{
+  "message": "Success",
+  "result": {
+    "id": 1, "name": "John", "email": "user@example.com",
+    "phone": "0901234567", "walletAmount": 500000,
+    "roleName": "User", "roleId": 1
+  }
+}
 ```
 
-### Cookie Settings
-```csharp
-- HttpOnly: true
-- SameSite: Lax
-- ExpireTimeSpan: 168 hours (7 days)
-- SlidingExpiration: false
+**Register:**
+```json
+// POST /api/users/register
+{ "name": "John", "email": "user@example.com", "phone": "0901234567", "password": "Pass123" }
+// Response: { "message": "Register success" }
+```
+
+**Save Cart:**
+```json
+// PATCH /api/users/temp-data
+{
+  "orderList": {
+    "guid-1": { "quantity": 2, "foodStore": { ... } },
+    "guid-2": { "quantity": 1, "foodStore": { ... } }
+  }
+}
 ```
 
 ---
 
-## 💳 Payment Integration
+### 2. Store API
 
-### MoMo Payment Flow
+**Base:** `/api/stores`
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      MoMo Payment Flow                           │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. User requests deposit                                        │
-│     POST /api/wallet/deposit { amount: 100000 }                 │
-│                          │                                       │
-│                          ▼                                       │
-│  2. Server creates MoMo payment request                          │
-│     - Generate unique OrderId                                    │
-│     - Calculate HMAC signature                                   │
-│     - Call MoMo API                                              │
-│                          │                                       │
-│                          ▼                                       │
-│  3. Return payment URL to user                                   │
-│     { payUrl: "https://test-payment.momo.vn/..." }              │
-│                          │                                       │
-│                          ▼                                       │
-│  4. User completes payment on MoMo                               │
-│                          │                                       │
-│            ┌─────────────┴─────────────┐                        │
-│            ▼                           ▼                        │
-│  5a. MoMo sends IPN              5b. User redirected            │
-│      POST /api/wallet/momo/ipn       GET /api/wallet/momo/return│
-│            │                                                     │
-│            ▼                                                     │
-│  6. Verify signature & process                                   │
-│     - Validate HMAC signature                                    │
-│     - Update wallet balance                                      │
-│     - Create transaction record                                  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/` | ❌ | Get all stores |
+| `GET` | `/tenant/{id}` | ❌ | Get stores by tenant |
+| `GET` | `/{id}` | ❌ | Get store detail |
 
-### OrderId Format
-```
-DEPOSIT_{UserId}_{Timestamp}_{Random}
-Example: DEPOSIT_123_1706789012345_A1B2
-```
-
----
-
-## 📝 API Response Format
-
-All API responses follow a consistent format:
-
-### Success Response
+**Response:**
 ```json
 {
-  "message": "Operation completed successfully",
-  "result": { ... }
-}
-```
-
-### Error Response
-```json
-{
-  "message": "Error description"
-}
-```
-
-### Response Classes
-```csharp
-// Basic response
-public class ParentResponse
-{
-    public string Message { get; set; }
-}
-
-// Response with data
-public class ParentResultResponse : ParentResponse
-{
-    public object Result { get; set; }
+  "id": 1, "name": "Bún Bò Huế Cô Ba",
+  "description": "Traditional Vietnamese noodles",
+  "address": "123 Lê Lợi, Q1",
+  "latitude": "10.7769", "longitude": "106.7009",
+  "imageSrc": "https://...", "phone": "0901234567",
+  "openTime": "07:00", "closeTime": "22:00",
+  "isOpen": true, "rating": 4.50, "reviewCount": 128,
+  "minOrderAmount": 30000, "deliveryFee": 15000,
+  "estimatedDeliveryTime": 30, "tenantId": 1
 }
 ```
 
 ---
 
-## 🧪 Testing
+### 3. Food API
 
-### Postman Collection
-Import `Wallet_MoMo_Payment_Testing.postman_collection.json` for ready-to-use API tests.
+**Base:** `/api/foods` — **Auth:** Admin, Manager
 
-### Test Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Get all foods |
+| `GET` | `/{id}` | Get food by ID |
+| `POST` | `/` | Create food |
+| `PUT` | `/` | Update food |
+
+```json
+// POST /api/foods
+{ "name": "Phở Bò", "imageSrc": "https://...", "foodTypeId": 2 }
+
+// PUT /api/foods
+{ "name": "Phở Bò Updated", "imageSrc": "https://...", "foodTypeId": 2, "isAvaiable": true }
+```
+
+---
+
+### 4. Food Type API
+
+**Base:** `/api/food-types`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/` | ❌ | Get all types |
+| `GET` | `/{id}` | ❌ | Get type by ID |
+| `POST` | `/` | ✅ Admin/Manager | Create type |
+| `PUT` | `/` | ✅ Admin/Manager | Update type |
+| `DELETE` | `/{id}` | ✅ Admin/Manager | Delete type |
+
+```json
+// POST
+{ "name": "Seafood", "imgSrc": "https://..." }
+// PUT
+{ "id": 5, "name": "Updated", "imgSrc": "https://..." }
+```
+
+---
+
+### 5. Food Store (Menu) API
+
+**Base:** `/api/food-stores`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/?foodName=&foodTypeId=` | ❌ | Get menu items (filtered) |
+
+```json
+// GET /api/food-stores?foodName=Phở&foodTypeId=2
+{
+  "result": [{
+    "id": "guid", "storeId": 1, "storeName": "Store A",
+    "foodId": 5, "foodName": "Phở Bò",
+    "sizeId": 2, "sizeName": "M",
+    "price": 55000, "isAvailable": true
+  }]
+}
+```
+
+---
+
+### 6. Tenant API
+
+**Base:** `/api/tenants`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/` | ❌ | Get all tenants |
+| `GET` | `/{id}` | ❌ | Get tenant by ID |
+| `POST` | `/` | ✅ Admin/Manager | Create tenant |
+| `PUT` | `/` | ✅ Admin/Manager | Update tenant |
+| `DELETE` | `/{id}` | ✅ Admin | Delete tenant |
+
+```json
+// POST
+{ "name": "Restaurant Group" }
+// PUT
+{ "id": 1, "name": "Updated Group" }
+```
+
+---
+
+### 7. Order API
+
+**Base:** `/api/orders` — **Auth:** ✅ Required
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/` | Create order |
+| `GET` | `/{id}` | Get order detail |
+| `GET` | `/history?status=` | User order history |
+| `GET` | `/store/{storeId}?status=` | Store orders |
+| `PUT` | `/{id}/status` | Update status |
+| `POST` | `/{id}/cancel` | Cancel order |
+| `POST` | `/legacy` | Create order (legacy dict) |
+| `GET` | `/{id}/legacy` | Get detail (legacy format) |
+
+**Create Order:**
+```json
+{
+  "storeId": 1,
+  "paymentMethod": 1,
+  "deliveryAddress": "123 Nguyễn Huệ, Q1",
+  "recipientPhone": "0901234567",
+  "recipientName": "Nguyễn Văn A",
+  "note": "Không hành",
+  "deliveryFee": 15000,
+  "discount": 10000,
+  "items": [
+    { "foodStoreId": "guid-1", "quantity": 2 },
+    { "foodStoreId": "guid-2", "quantity": 1 }
+  ]
+}
+```
+
+**Update Status:**
+```json
+{ "status": 1, "reason": "optional" }
+```
+
+**Cancel Order:**
+```json
+{ "reason": "Changed my mind" }
+```
+
+**Order Status Flow:**
+```
+Pending(0) → Confirmed(1) → Preparing(2) → Ready(3) → Delivering(4) → Completed(5)
+     └──────────────────────────────────────────────────────────────→ Cancelled(6)
+```
+
+---
+
+### 8. Wallet & Payment API
+
+**Base:** `/api/wallet`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/balance` | ✅ | Get wallet balance |
+| `POST` | `/deposit` | ✅ | Deposit via MoMo |
+| `POST` | `/momo/ipn` | ❌ | MoMo IPN webhook |
+| `GET` | `/momo/return` | ❌ | MoMo return URL |
+| `GET` | `/transactions?pageNumber=&pageSize=` | ✅ | Transaction history |
+| `GET` | `/check-balance/{amount}` | ✅ | Check balance |
+
+**Get Balance:**
+```json
+{
+  "result": {
+    "userId": 1, "userName": "John",
+    "balance": 500000, "formattedBalance": "500,000 VND",
+    "lastUpdated": "2025-01-31T14:00:00Z"
+  }
+}
+```
+
+**Deposit:**
+```json
+// POST /api/wallet/deposit
+{ "amount": 100000, "note": "Top up" }
+
+// Response
+{
+  "result": {
+    "orderId": "DEPOSIT_1_abc123",
+    "amount": 100000,
+    "payUrl": "https://test-payment.momo.vn/...",
+    "deepLink": "momo://...",
+    "qrCodeUrl": "https://...",
+    "success": true
+  }
+}
+```
+
+**Check Balance:**
+```json
+// GET /api/wallet/check-balance/50000
+{ "result": { "amount": 50000, "hasSufficientBalance": true } }
+```
+
+---
+
+### 9. Delivery Address API
+
+**Base:** `/api/addresses` — **Auth:** ✅ Required
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Get all addresses |
+| `GET` | `/{id}` | Get by ID |
+| `GET` | `/default` | Get default address |
+| `POST` | `/` | Create address |
+| `PUT` | `/{id}` | Update address |
+| `DELETE` | `/{id}` | Delete address |
+| `PUT` | `/{id}/default` | Set as default |
+
+```json
+// POST /api/addresses
+{
+  "label": "Home",
+  "recipientName": "Nguyễn Văn A",
+  "phone": "0901234567",
+  "address": "123 Nguyễn Huệ, Q1, TP.HCM",
+  "addressDetail": "Tầng 3, căn 301",
+  "latitude": "10.7769",
+  "longitude": "106.7009",
+  "isDefault": true
+}
+```
+
+---
+
+### 10. Review API
+
+**Base:** `/api/reviews`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/` | ✅ | Create review |
+| `GET` | `/{id}` | ❌ | Get review |
+| `GET` | `/store/{storeId}?pageNumber=&pageSize=` | ❌ | Store reviews + stats |
+| `GET` | `/food/{foodId}?pageNumber=&pageSize=` | ❌ | Food reviews |
+| `GET` | `/my-reviews?pageNumber=&pageSize=` | ✅ | My reviews |
+| `POST` | `/{id}/reply` | ✅ | Store reply |
+| `DELETE` | `/{id}` | ✅ | Delete review |
+| `GET` | `/can-review/{orderId}` | ✅ | Check eligibility |
+
+**Create:**
+```json
+{
+  "orderId": "guid", "storeId": 1, "foodId": 5,
+  "rating": 5, "comment": "Rất ngon!",
+  "images": ["https://img1.jpg"]
+}
+```
+
+**Reply:**
+```json
+// POST /api/reviews/{id}/reply
+{ "reply": "Cảm ơn bạn!" }
+```
+
+**Store Reviews Response:**
+```json
+{
+  "result": {
+    "stats": { "averageRating": 4.3, "totalReviews": 128 },
+    "reviews": [...],
+    "pageNumber": 1, "pageSize": 20
+  }
+}
+```
+
+---
+
+### 11. Voucher API
+
+**Base:** `/api/vouchers`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/` | ✅ Admin/Manager | Create voucher |
+| `GET` | `/{id}` | ❌ | Get by ID |
+| `GET` | `/code/{code}` | ❌ | Get by code |
+| `GET` | `/active?storeId=` | ❌ | Active vouchers |
+| `GET` | `/available?orderAmount=&storeId=` | ✅ | Available for user |
+| `POST` | `/apply` | ✅ | Apply voucher |
+| `PUT` | `/{id}` | ✅ Admin/Manager | Update voucher |
+| `DELETE` | `/{id}` | ✅ Admin/Manager | Deactivate |
+
+**Create:**
+```json
+{
+  "code": "SAVE20", "name": "Giảm 20%",
+  "description": "Giảm 20% đơn từ 50k",
+  "type": 1, "value": 20,
+  "minOrderAmount": 50000, "maxDiscount": 30000,
+  "startDate": "2025-02-01", "endDate": "2025-03-01",
+  "usageLimit": 100, "usageLimitPerUser": 1,
+  "storeId": null
+}
+```
+
+**Apply:**
+```json
+// POST /api/vouchers/apply
+{ "code": "SAVE20", "orderAmount": 100000, "storeId": 1 }
+
+// Response
+{ "result": { "discountAmount": 20000, "finalAmount": 80000 } }
+```
+
+**Update:**
+```json
+{
+  "name": "Updated", "minOrderAmount": 60000,
+  "endDate": "2025-04-01", "isActive": true
+}
+```
+
+---
+
+### 12. Favorite API
+
+**Base:** `/api/favorites` — **Auth:** ✅ Required
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/stores` | Get favorite stores |
+| `GET` | `/foods` | Get favorite foods |
+| `POST` | `/stores/{storeId}` | Add store favorite |
+| `POST` | `/foods/{foodId}` | Add food favorite |
+| `DELETE` | `/stores/{storeId}` | Remove store favorite |
+| `DELETE` | `/foods/{foodId}` | Remove food favorite |
+| `GET` | `/stores/{storeId}/check` | Is store favorited? |
+| `GET` | `/foods/{foodId}/check` | Is food favorited? |
+
+```json
+// GET /api/favorites/stores/1/check
+{ "result": { "isFavorited": true } }
+```
+
+---
+
+### 13. Notification API
+
+**Base:** `/api/notifications` — **Auth:** ✅ Required
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/?pageNumber=&pageSize=&isRead=` | Get notifications |
+| `GET` | `/unread-count` | Unread count |
+| `PUT` | `/{id}/read` | Mark as read |
+| `PUT` | `/read-all` | Mark all read |
+| `DELETE` | `/{id}` | Delete notification |
+
+**Response:**
+```json
+{
+  "result": {
+    "notifications": [{
+      "id": "guid", "title": "Order Confirmed",
+      "content": "Your order has been confirmed",
+      "type": 1, "referenceId": "order-guid",
+      "deepLink": "grabfood://orders/guid",
+      "isRead": false, "createdAt": "2025-01-31T14:00:00Z"
+    }],
+    "unreadCount": 5,
+    "pageNumber": 1, "pageSize": 20
+  }
+}
+```
+
+---
+
+## 📊 Enums
+
+### OrderStatus
+| Value | Name | Description |
+|-------|------|-------------|
+| 0 | `Pending` | Waiting for confirmation |
+| 1 | `Confirmed` | Store confirmed |
+| 2 | `Preparing` | Being prepared |
+| 3 | `Ready` | Ready for delivery |
+| 4 | `Delivering` | Being delivered |
+| 5 | `Completed` | Delivered |
+| 6 | `Cancelled` | Cancelled |
+
+### PaymentMethod
+| Value | Name |
+|-------|------|
+| 1 | `Wallet` |
+| 2 | `CashOnDelivery` |
+| 3 | `MoMo` |
+
+### PaymentStatus
+| Value | Name |
+|-------|------|
+| 0 | `Unpaid` |
+| 1 | `Paid` |
+| 2 | `Refunded` |
+| 3 | `Failed` |
+
+### TransactionType
+| Value | Name |
+|-------|------|
+| 1 | `Deposit` |
+| 2 | `Payment` |
+| 3 | `Refund` |
+| 4 | `Withdrawal` |
+| 5 | `Bonus` |
+
+### TransactionStatus
+| Value | Name |
+|-------|------|
+| 0 | `Pending` |
+| 1 | `Completed` |
+| 2 | `Failed` |
+| 3 | `Cancelled` |
+
+### VoucherType
+| Value | Name | Description |
+|-------|------|-------------|
+| 1 | `Percent` | Discount % (e.g., 20%) |
+| 2 | `FixedAmount` | Fixed amount (e.g., 10,000 VND) |
+| 3 | `FreeShipping` | Free delivery |
+
+### NotificationType
+| Value | Name |
+|-------|------|
+| 0 | `System` |
+| 1 | `Order` |
+| 2 | `Promotion` |
+| 3 | `Wallet` |
+| 4 | `Review` |
+| 5 | `Feature` |
+
+### RoleEnum
+| Value | Name |
+|-------|------|
+| 1 | `User` |
+| 2 | `Manager` |
+| 3 | `Admin` |
+
+---
+
+## ⚠️ Error Handling
+
+### Global Exception Middleware
+
+All unhandled exceptions are caught by `GlobalExceptionMiddleware` and returned as consistent JSON.
+
+| Exception | HTTP Status | Use Case |
+|-----------|-------------|----------|
+| `BadRequestException` | 400 | Business validation |
+| `OutOfWalletAmountException` | 400 | Insufficient balance |
+| `DbUpdateException` | 400 | DB constraint violation |
+| `DbException` | 400 | Database errors |
+| `ArgumentNullException` | 400 | Missing parameters |
+| `ArgumentException` | 400 | Invalid arguments |
+| `InvalidOperationException` | 400 | Invalid operations |
+| `KeyNotFoundException` | 404 | Not found |
+| `Exception` (default) | 500 | Unexpected errors |
+
+**Error Response:** `{ "message": "Error description" }`
+
+**Pattern:**
+```
+Client → Controller → Repository (throws exception) → GlobalExceptionMiddleware → HTTP Response
+```
+
+---
+
+## 💳 MoMo Payment Integration
+
+### Configuration
+
+```json
+{
+  "MoMo": {
+    "PartnerCode": "MOMOBKUN20180529",
+    "AccessKey": "klm05TvNBzhg7h7j",
+    "SecretKey": "at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa",
+    "ApiEndpoint": "https://test-payment.momo.vn",
+    "NotifyUrl": "http://grab-food.somee.com/api/wallet/momo/ipn",
+    "ReturnUrl": "grabfood://payment/callback"
+  }
+}
+```
+
+### Payment Flow
+
+```
+App → POST /wallet/deposit → Backend creates pending tx → POST MoMo API
+                                                            ↓
+App ← payUrl/deepLink ← Backend ← MoMo returns URLs
+
+App → User pays on MoMo app
+
+       Backend ← POST /wallet/momo/ipn ← MoMo IPN webhook
+       (verify signature, update wallet, return 204)
+
+App ← MoMo redirects via deep link (grabfood://payment/callback)
+```
+
+### Key Details
+
+| Aspect | Value |
+|--------|-------|
+| OrderId Format | `DEPOSIT_{userId}_{requestId}` |
+| Signature | HMAC-SHA256 |
+| IPN Endpoint | `POST /api/wallet/momo/ipn` (no auth) |
+| Return URL | Deep link to app |
+| Idempotency | Checks `ExternalReference` |
+| Amount Range | 10,000 - 50,000,000 VND |
+| Environment | Test (`test-payment.momo.vn`) |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- SQL Server
+- Git
+
+### Run Locally
+
 ```bash
-# Health check
-GET /swagger
-
-# Login
-POST /api/users/login
-{
-  "email": "test@example.com",
-  "password": "password123"
-}
-
-# Get wallet balance
-GET /api/wallet/balance
-
-# Create deposit
-POST /api/wallet/deposit
-{
-  "amount": 100000,
-  "orderInfo": "Test deposit"
-}
+git clone https://github.com/xuanhien010204/grab_food_backend.git
+cd grab_food_backend
+dotnet restore
+dotnet ef database update --project FoodOrderingPRM392
+dotnet run --project FoodOrderingPRM392
 ```
+
+### Local URLs
+
+- `https://localhost:7163` — HTTPS
+- `http://localhost:5190` — HTTP
+- `/swagger` — Swagger UI
+
+---
+
+## 🌐 Deployment
+
+| Component | URL |
+|-----------|-----|
+| **API** | `http://grab-food.somee.com` |
+| **Swagger** | `http://grab-food.somee.com/swagger` |
+| **Database** | `grab-food.mssql.somee.com` |
+| **GitHub** | `https://github.com/xuanhien010204/grab_food_backend` |
+
+### Hosting Notes
+
+- **HTTP only** (Somee.com free tier)
+- Cookie `SecurePolicy = SameAsRequest` for HTTP compatibility
+- Cookie `SameSite = Lax` for cross-site requests
+- HTTPS redirection disabled
+- MoMo IPN URL must be publicly accessible
 
 ---
 
 ## 📄 License
 
-This project is for educational purposes.
-
----
-
-## 👥 Contributors
-
-- **Xuan Hien** - Backend Developer
-
----
-
-## 📞 Support
-
-For support, email xuanhien010204@gmail.com or create an issue on GitHub.
-
----
-
-**Last Updated:** January 2025
+Developed for educational purposes — **PRM392 Course Project**.

@@ -43,7 +43,7 @@ namespace FoodOrderingRepository.Implement
             using (var con = new SqlConnection(_connectionOption.FOOD))
             {
                 string sql =
-                    @" SELECT u.Id, u.Name, u.Email, u.Phone, u.WalletAmount, u.RoleId, r.Name 'RoleName'
+                    @" SELECT u.Id, u.Name, u.Email, u.Phone, u.RoleId, r.Name 'RoleName'
                        FROM Users u JOIN Roles r ON u.RoleId = r.Id
                        WHERE u.Id = @id ";
                 object param = new { id };
@@ -62,7 +62,7 @@ namespace FoodOrderingRepository.Implement
             {
                 // First, get user by email only
                 string sql =
-                    @" SELECT u.Id, u.Name, u.Email, u.Phone, u.WalletAmount, u.RoleId, u.Password,
+                    @" SELECT u.Id, u.Name, u.Email, u.Phone, u.RoleId, u.Password,
                               r.Name 'RoleName', u.TempCartMeta
                        FROM Users u JOIN Roles r ON u.RoleId = r.Id
                        WHERE u.Email = @email ";
@@ -89,7 +89,7 @@ namespace FoodOrderingRepository.Implement
                             Name = userWithPassword.Name,
                             Email = userWithPassword.Email,
                             Phone = userWithPassword.Phone,
-                            WalletAmount = userWithPassword.WalletAmount,
+                            //WalletAmount = userWithPassword.WalletAmount,
                             RoleId = userWithPassword.RoleId,
                             RoleName = userWithPassword.RoleName,
                             TempCartMeta = userWithPassword.TempCartMeta
@@ -129,14 +129,14 @@ namespace FoodOrderingRepository.Implement
             return count;
         }
 
-        public async Task RecharseWalletAmountAsync(decimal money, long userId)
-        {
-            User user = await _context.Users.FindAsync(userId);
+        //public async Task RecharseWalletAmountAsync(decimal money, long userId)
+        //{
+        //    User user = await _context.Users.FindAsync(userId);
 
-            user.WalletAmount += money;
+        //    user.WalletAmount += money;
 
-            await _context.SaveChangesAsync();
-        }
+        //    await _context.SaveChangesAsync();
+        //}
 
         public async Task UpdateTempCartMetaAsync(Cart cart, long userId)
         {
