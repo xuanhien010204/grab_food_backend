@@ -55,16 +55,16 @@ namespace FoodOrderingPRM392.Controllers
             return Ok(new ParentResultResponse { Message = "Success", Result = user });
         }
 
-        [HttpPut("top-up")]
-        [Authorize]
-        public async Task<IActionResult> RecharseWalletAmountAsybc([FromBody][Range(1000, double.MaxValue, ErrorMessage = "Amount must be more than or equal 1000")] decimal money)
-        {
-            long userId = Convert.ToInt64(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+        //[HttpPut("top-up")]
+        //[Authorize]
+        //public async Task<IActionResult> RecharseWalletAmountAsybc([FromBody][Range(1000, double.MaxValue, ErrorMessage = "Amount must be more than or equal 1000")] decimal money)
+        //{
+        //    long userId = Convert.ToInt64(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
 
-            await _userRepository.RecharseWalletAmountAsync(money, userId);
+        //    await _userRepository.RecharseWalletAmountAsync(money, userId);
 
-            return Ok(new ParentResponse { Message = "Success" });
-        }
+        //    return Ok(new ParentResponse { Message = "Success" });
+        //}
 
 
         private async Task RegisterCookie(UserDto user)
@@ -74,7 +74,7 @@ namespace FoodOrderingPRM392.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.MobilePhone, user.Phone),
-                new Claim("WalletAmount", user.WalletAmount.ToString()),
+               // new Claim("WalletAmount", user.WalletAmount.ToString()),
                 new Claim(ClaimTypes.Role, user.RoleName),
                 new Claim("RoleId", user.RoleId.ToString()),
             };
