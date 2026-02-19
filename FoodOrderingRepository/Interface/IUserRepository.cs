@@ -13,5 +13,7 @@ namespace FoodOrderingRepository.Interface
         Task<UserDto> GetById(long id);
         Task UpdateTempCartMetaAsync(Cart cart, long userId);
         Task DeleteTempCartMetaAsync(long userId);
+        Task<bool> UpdateUser(long userId,UserEdit user);
+        Task<bool> LockUser(long userId);
     }
 }

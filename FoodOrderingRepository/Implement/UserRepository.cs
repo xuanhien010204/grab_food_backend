@@ -9,7 +9,9 @@ using FoodOrderingCore.Request;
 using FoodOrderingRepository.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using static Dapper.SqlMapper;
 
 namespace FoodOrderingRepository.Implement
 {
@@ -129,15 +131,6 @@ namespace FoodOrderingRepository.Implement
             return count;
         }
 
-        //public async Task RecharseWalletAmountAsync(decimal money, long userId)
-        //{
-        //    User user = await _context.Users.FindAsync(userId);
-
-        //    user.WalletAmount += money;
-
-        //    await _context.SaveChangesAsync();
-        //}
-
         public async Task UpdateTempCartMetaAsync(Cart cart, long userId)
         {
             User user = await _context.Users.FindAsync(userId);
@@ -152,6 +145,34 @@ namespace FoodOrderingRepository.Implement
             user.TempCartMeta = null;
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> UpdateUser(long userId, UserEdit user)
+        {
+            User entity = await _context.Users.FindAsync(userId);
+            if (entity == null) return false;
+            if (!string.IsNullOrWhiteSpace(user.Name))
+            {
+                entity.Name = user.Name;
+            }
+            if (!string.IsNullOrWhiteSpace(user.Name))
+            {
+                entity.Email = user.Email;
+            }
+            if (!string.IsNullOrWhiteSpace(user.Name))
+            {
+                entity.Phone = user.Phone;
+            }
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        public async Task<bool> LockUser(long userId)
+        {
+            User entity = await _context.Users.FindAsync(userId);
+            if (entity == null) return false;
+            entity.IsActive = false;
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

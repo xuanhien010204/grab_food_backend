@@ -40,5 +40,6 @@ namespace FoodOrderingCore.Data
         public ICollection<Favorite> Favorites { get; set; }
         public ICollection<Notification> Notifications { get; set; }
         public ICollection<VoucherUsage> VoucherUsages { get; set; }
+        public ICollection<Store> ManagedStores { get; set; }
     }
 }

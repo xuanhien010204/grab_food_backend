@@ -51,6 +51,13 @@ namespace FoodOrderingCore.Data
         // Estimated delivery time in minutes
         public int EstimatedDeliveryTime { get; set; } = 30;
 
+        // Manager (owner) of the store
+        public long? ManagerId { get; set; }
+        public User Manager { get; set; }
+
+        // Approval status (false = pending, true = approved)
+        public bool IsApproved { get; set; } = false;
+
         public int TenantId { get; set; }
 
         public Tenant Tenant { get; set; }
