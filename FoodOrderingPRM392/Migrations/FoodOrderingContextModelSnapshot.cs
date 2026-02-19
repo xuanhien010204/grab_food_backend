@@ -22,6 +22,94 @@ namespace FoodOrderingPRM392.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("FoodOrderingCore.Data.DeliveryAddress", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("AddressDetail")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Latitude")
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Longitude")
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("varchar(15)");
+
+                    b.Property<string>("RecipientName")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "IsDefault");
+
+                    b.ToTable("DeliveryAddresses");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.Favorite", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("FoodId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FoodId");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex("UserId", "FoodId")
+                        .IsUnique()
+                        .HasFilter("[FoodId] IS NOT NULL");
+
+                    b.HasIndex("UserId", "StoreId")
+                        .IsUnique()
+                        .HasFilter("[StoreId] IS NOT NULL");
+
+                    b.ToTable("Favorites");
+                });
+
             modelBuilder.Entity("FoodOrderingCore.Data.Food", b =>
                 {
                     b.Property<long>("Id")
@@ -29,6 +117,9 @@ namespace FoodOrderingPRM392.Migrations
                         .HasColumnType("bigint");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("FoodTypeId")
                         .HasColumnType("int");
@@ -44,6 +135,12 @@ namespace FoodOrderingPRM392.Migrations
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<decimal>("Rating")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ReviewCount")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -179,6 +276,49 @@ namespace FoodOrderingPRM392.Migrations
                         });
                 });
 
+            modelBuilder.Entity("FoodOrderingCore.Data.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeepLink")
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReferenceId")
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("FoodOrderingCore.Data.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -239,6 +379,9 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("VoucherCode")
+                        .HasColumnType("varchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Status");
@@ -272,6 +415,62 @@ namespace FoodOrderingPRM392.Migrations
                     b.HasIndex("FoodStoreId");
 
                     b.ToTable("OrderDetails");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.Review", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("FoodId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Images")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsVisible")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoreReply")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("StoreReplyAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("FoodId", "Rating");
+
+                    b.HasIndex("StoreId", "Rating");
+
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.Role", b =>
@@ -318,8 +517,26 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("CloseTime")
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<decimal>("DeliveryFee")
+                        .HasColumnType("money");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EstimatedDeliveryTime")
+                        .HasColumnType("int");
+
                     b.Property<string>("ImageSrc")
                         .HasColumnType("varchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsOpen")
                         .HasColumnType("bit");
@@ -330,14 +547,23 @@ namespace FoodOrderingPRM392.Migrations
                     b.Property<string>("Longitude")
                         .HasColumnType("varchar(20)");
 
+                    b.Property<long?>("ManagerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("MinOrderAmount")
+                        .HasColumnType("money");
+
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("OpenTime")
+                        .HasColumnType("varchar(10)");
 
                     b.Property<string>("Phone")
                         .HasColumnType("varchar(15)");
 
                     b.Property<decimal>("Rating")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(3,2)");
 
                     b.Property<int>("ReviewCount")
                         .HasColumnType("int");
@@ -346,6 +572,8 @@ namespace FoodOrderingPRM392.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ManagerId");
 
                     b.HasIndex("TenantId");
 
@@ -391,8 +619,20 @@ namespace FoodOrderingPRM392.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(256)");
@@ -421,6 +661,106 @@ namespace FoodOrderingPRM392.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.Voucher", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("MaxDiscount")
+                        .HasColumnType("money");
+
+                    b.Property<decimal>("MinOrderAmount")
+                        .HasColumnType("money");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UsageLimit")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UsageLimitPerUser")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsedCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("money");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasFilter("[Code] IS NOT NULL");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex("IsActive", "StartDate", "EndDate");
+
+                    b.ToTable("Vouchers");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.VoucherUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("money");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("VoucherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("VoucherId", "UserId");
+
+                    b.ToTable("VoucherUsages");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.WalletTransaction", b =>
@@ -471,6 +811,42 @@ namespace FoodOrderingPRM392.Migrations
                     b.ToTable("WalletTransactions");
                 });
 
+            modelBuilder.Entity("FoodOrderingCore.Data.DeliveryAddress", b =>
+                {
+                    b.HasOne("FoodOrderingCore.Data.User", "User")
+                        .WithMany("DeliveryAddresses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.Favorite", b =>
+                {
+                    b.HasOne("FoodOrderingCore.Data.Food", "Food")
+                        .WithMany("Favorites")
+                        .HasForeignKey("FoodId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("FoodOrderingCore.Data.Store", "Store")
+                        .WithMany("Favorites")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("FoodOrderingCore.Data.User", "User")
+                        .WithMany("Favorites")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Food");
+
+                    b.Navigation("Store");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FoodOrderingCore.Data.Food", b =>
                 {
                     b.HasOne("FoodOrderingCore.Data.FoodType", "FoodType")
@@ -506,6 +882,17 @@ namespace FoodOrderingPRM392.Migrations
                     b.Navigation("Size");
 
                     b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.Notification", b =>
+                {
+                    b.HasOne("FoodOrderingCore.Data.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.Order", b =>
@@ -546,13 +933,53 @@ namespace FoodOrderingPRM392.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("FoodOrderingCore.Data.Review", b =>
+                {
+                    b.HasOne("FoodOrderingCore.Data.Food", "Food")
+                        .WithMany("Reviews")
+                        .HasForeignKey("FoodId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("FoodOrderingCore.Data.Order", "Order")
+                        .WithOne("Review")
+                        .HasForeignKey("FoodOrderingCore.Data.Review", "OrderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("FoodOrderingCore.Data.Store", "Store")
+                        .WithMany("Reviews")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("FoodOrderingCore.Data.User", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Food");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Store");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FoodOrderingCore.Data.Store", b =>
                 {
+                    b.HasOne("FoodOrderingCore.Data.User", "Manager")
+                        .WithMany("ManagedStores")
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FoodOrderingCore.Data.Tenant", "Tenant")
                         .WithMany("Stores")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Manager");
 
                     b.Navigation("Tenant");
                 });
@@ -568,6 +995,43 @@ namespace FoodOrderingPRM392.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("FoodOrderingCore.Data.Voucher", b =>
+                {
+                    b.HasOne("FoodOrderingCore.Data.Store", "Store")
+                        .WithMany("Vouchers")
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.VoucherUsage", b =>
+                {
+                    b.HasOne("FoodOrderingCore.Data.Order", "Order")
+                        .WithOne("VoucherUsage")
+                        .HasForeignKey("FoodOrderingCore.Data.VoucherUsage", "OrderId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("FoodOrderingCore.Data.User", "User")
+                        .WithMany("VoucherUsages")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("FoodOrderingCore.Data.Voucher", "Voucher")
+                        .WithMany("Usages")
+                        .HasForeignKey("VoucherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("User");
+
+                    b.Navigation("Voucher");
+                });
+
             modelBuilder.Entity("FoodOrderingCore.Data.WalletTransaction", b =>
                 {
                     b.HasOne("FoodOrderingCore.Data.User", "User")
@@ -581,7 +1045,11 @@ namespace FoodOrderingPRM392.Migrations
 
             modelBuilder.Entity("FoodOrderingCore.Data.Food", b =>
                 {
+                    b.Navigation("Favorites");
+
                     b.Navigation("FoodStores");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.FoodSize", b =>
@@ -602,6 +1070,10 @@ namespace FoodOrderingPRM392.Migrations
             modelBuilder.Entity("FoodOrderingCore.Data.Order", b =>
                 {
                     b.Navigation("OrderDetails");
+
+                    b.Navigation("Review");
+
+                    b.Navigation("VoucherUsage");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.Role", b =>
@@ -611,9 +1083,15 @@ namespace FoodOrderingPRM392.Migrations
 
             modelBuilder.Entity("FoodOrderingCore.Data.Store", b =>
                 {
+                    b.Navigation("Favorites");
+
                     b.Navigation("FoodStores");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("Reviews");
+
+                    b.Navigation("Vouchers");
                 });
 
             modelBuilder.Entity("FoodOrderingCore.Data.Tenant", b =>
@@ -623,9 +1101,26 @@ namespace FoodOrderingPRM392.Migrations
 
             modelBuilder.Entity("FoodOrderingCore.Data.User", b =>
                 {
+                    b.Navigation("DeliveryAddresses");
+
+                    b.Navigation("Favorites");
+
+                    b.Navigation("ManagedStores");
+
+                    b.Navigation("Notifications");
+
                     b.Navigation("Orders");
 
+                    b.Navigation("Reviews");
+
+                    b.Navigation("VoucherUsages");
+
                     b.Navigation("WalletTransactions");
+                });
+
+            modelBuilder.Entity("FoodOrderingCore.Data.Voucher", b =>
+                {
+                    b.Navigation("Usages");
                 });
 #pragma warning restore 612, 618
         }

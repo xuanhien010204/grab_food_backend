@@ -13,4 +13,10 @@ namespace FoodOrderingCore.Dto
         public string RoleName { set; get; }
         public string TempCartMeta { set; get; }
     }
+    public class UserEdit
+    {
+        public string Name { set; get; }
+        public string Email { set; get; }
+        public string Phone { set; get; }
+    }
 }

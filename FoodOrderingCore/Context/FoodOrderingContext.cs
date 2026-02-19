@@ -41,6 +41,13 @@ namespace FoodOrderingCore.Context
                 .HasForeignKey(s => s.TenantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Manager - Store relationship (1:N)
+            builder.Entity<Store>()
+                .HasOne(s => s.Manager)
+                .WithMany(u => u.ManagedStores)
+                .HasForeignKey(s => s.ManagerId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.Entity<FoodStore>()
                 .HasIndex(fs => new { fs.StoreId, fs.FoodId, fs.SizeId })
                 .IsUnique(true);
