@@ -111,7 +111,7 @@ namespace FoodOrderingPRM392.Controllers
                 : BadRequest(new ParentResponse { Message = "Fail" });
 
         }
-        [HttpPut("lock{userId}")]
+        [HttpPut("lock/{userId}")]
         [Authorize(Roles = "Manager")]
         public async Task<IActionResult> LockUser(long userId)
         {

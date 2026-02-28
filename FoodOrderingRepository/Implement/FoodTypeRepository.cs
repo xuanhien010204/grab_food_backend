@@ -82,9 +82,10 @@ namespace FoodOrderingRepository.Implement
             using (var con = new SqlConnection(connectionOption.FOOD))
             {
                 var sql =
-                    @" UPDATE INTO FoodTypes ( Name, ImgSrc )
-                       VALUES ( @Name, @ImgSrc );
-                       SELECT CAST(SCOPE_IDENTITY() as int);
+                    @" UPDATE FoodTypes
+                       SET Name = @Name, ImgSrc = @ImgSrc
+                       WHERE Id = @Id;
+                       SELECT @Id;
                      ";
                 return await con.ExecuteScalarAsync<int>(sql, foodTypeDto);
             }

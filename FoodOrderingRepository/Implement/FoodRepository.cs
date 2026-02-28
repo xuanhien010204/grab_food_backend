@@ -23,7 +23,10 @@ namespace FoodOrderingRepository.Implement
             using (var con = new SqlConnection(connectionOption.FOOD))
             {
                 var sql = @"INSERT INTO Foods(Name, ImageSrc, FoodTypeId, IsAvailable)
-                        VALUES (@Name, @ImageSrc, @FoodTypeId, @IsAvailable)";
+                        VALUES (@Name, @ImageSrc, @FoodTypeId, @IsAvailable);
+                        SELECT f.Id, f.Name, f.ImageSrc, f.FoodTypeId, ft.Name AS FoodTypeName, f.IsAvailable
+                        FROM Foods f JOIN FoodTypes ft ON f.FoodTypeId = ft.Id
+                        WHERE f.Id = SCOPE_IDENTITY();";
                 object param = new
                 {
                     request.Name,
@@ -68,9 +71,9 @@ namespace FoodOrderingRepository.Implement
             using (var con = new SqlConnection(connectionOption.FOOD))
             {
                 var sql =
-                    @" UPDATE INTO FoodTypes ( Name, ImgSrc )
-                       VALUES ( @Name, @ImgSrc );
-                       SELECT CAST(SCOPE_IDENTITY() as int);
+                    @" UPDATE Foods SET Name = @Name, ImageSrc = @ImageSrc, FoodTypeId = @FoodTypeId, IsAvailable = @IsAvailable
+                       WHERE Id = @Id;
+                       SELECT CAST(@Id as int);
                      ";
                 return await con.ExecuteScalarAsync<int>(sql, update);
             }
