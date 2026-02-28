@@ -155,11 +155,11 @@ namespace FoodOrderingRepository.Implement
             {
                 entity.Name = user.Name;
             }
-            if (!string.IsNullOrWhiteSpace(user.Name))
+            if (!string.IsNullOrWhiteSpace(user.Email))
             {
                 entity.Email = user.Email;
             }
-            if (!string.IsNullOrWhiteSpace(user.Name))
+            if (!string.IsNullOrWhiteSpace(user.Phone))
             {
                 entity.Phone = user.Phone;
             }

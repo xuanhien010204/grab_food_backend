@@ -62,8 +62,9 @@ namespace FoodOrderingRepository.Implement
             };
 
             _context.Reviews.Add(review);
+            await _context.SaveChangesAsync();
 
-            // Update store rating
+            // Update store rating (must be after SaveChanges so Dapper queries can see the new review)
             if (review.StoreId.HasValue)
             {
                 await UpdateStoreRatingAsync(review.StoreId.Value);
@@ -74,8 +75,6 @@ namespace FoodOrderingRepository.Implement
             {
                 await UpdateFoodRatingAsync(review.FoodId.Value);
             }
-
-            await _context.SaveChangesAsync();
 
             return await GetReviewByIdAsync(review.Id);
         }
@@ -204,15 +203,14 @@ namespace FoodOrderingRepository.Implement
 
             review.IsVisible = false;
             review.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
-            // Recalculate ratings
+            // Recalculate ratings (must be after SaveChanges so Dapper queries reflect the hidden review)
             if (review.StoreId.HasValue)
                 await UpdateStoreRatingAsync(review.StoreId.Value);
 
             if (review.FoodId.HasValue)
                 await UpdateFoodRatingAsync(review.FoodId.Value);
-
-            await _context.SaveChangesAsync();
             return true;
         }
 
