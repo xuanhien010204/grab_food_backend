@@ -11,6 +11,7 @@ namespace FoodOrderingCore.Dto
         public long FoodId { set; get; }
         public FoodDto Food { set; get; }
         public int? SizeId { get; set; }
+        public string SizeName { get; set; }
         public FoodSize Size { set; get; }
         public decimal Price { set; get; }
         public bool IsAvailable { get; set; }

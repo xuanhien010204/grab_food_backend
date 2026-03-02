@@ -34,6 +34,21 @@ namespace FoodOrderingPRM392.Controllers
         }
 
         /// <summary>
+        /// Get all food stores (menu items) for a specific store
+        /// </summary>
+        [HttpGet("store/{storeId}")]
+        public async Task<IActionResult> GetFoodStoresByStoreId(long storeId)
+        {
+            var list = await foodStoreRepository.GetFoodStoresByStoreId(storeId);
+
+            return Ok(new ParentResultResponse
+            {
+                Message = "Success",
+                Result = list
+            });
+        }
+
+        /// <summary>
         /// Manager see list foodstores
         /// </summary>
         [HttpGet("my-store")]

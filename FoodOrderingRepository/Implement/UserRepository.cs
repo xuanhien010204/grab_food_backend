@@ -131,6 +131,29 @@ namespace FoodOrderingRepository.Implement
             return count;
         }
 
+        public async Task<Cart> GetTempCartAsync(long userId)
+        {
+            string tempCartMeta = null;
+
+            using (var con = new SqlConnection(_connectionOption.FOOD))
+            {
+                string sql = "SELECT TempCartMeta FROM Users WHERE Id = @userId";
+                tempCartMeta = await con.QueryFirstOrDefaultAsync<string>(sql, new { userId });
+            }
+
+            if (string.IsNullOrEmpty(tempCartMeta))
+                return new Cart { OrderList = new Dictionary<string, CartItem>() };
+
+            try
+            {
+                return tempCartMeta.ToObject<Cart>() ?? new Cart { OrderList = new Dictionary<string, CartItem>() };
+            }
+            catch
+            {
+                return new Cart { OrderList = new Dictionary<string, CartItem>() };
+            }
+        }
+
         public async Task UpdateTempCartMetaAsync(Cart cart, long userId)
         {
             User user = await _context.Users.FindAsync(userId);

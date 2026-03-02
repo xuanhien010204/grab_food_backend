@@ -11,6 +11,7 @@ namespace FoodOrderingRepository.Interface
         //Task RecharseWalletAmountAsync(decimal money, long userId);
         Task<IEnumerable<UserDto>> GetAllAsync();
         Task<UserDto> GetById(long id);
+        Task<Cart> GetTempCartAsync(long userId);
         Task UpdateTempCartMetaAsync(Cart cart, long userId);
         Task DeleteTempCartMetaAsync(long userId);
         Task<bool> UpdateUser(long userId,UserEdit user);

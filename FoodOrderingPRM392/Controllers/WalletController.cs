@@ -148,29 +148,54 @@ namespace FoodOrderingPRM392.Controllers
             }
         }
 
-        // MoMo Return URL (redirect after payment)
+        // MoMo Return URL (redirect after payment) - also acts as IPN fallback
         [HttpGet("momo/return")]
-        public IActionResult MomoReturn(
+        public async Task<IActionResult> MomoReturn(
             [FromQuery] string orderId, 
             [FromQuery] int resultCode, 
-            [FromQuery] string message)
+            [FromQuery] string message,
+            [FromQuery] decimal amount = 0)
         {
             _logger.LogInformation("MoMo return: OrderId={OrderId}, ResultCode={ResultCode}", 
                 orderId, resultCode);
 
-            var responseMessage = resultCode == 0 
-                ? WalletMessages.DepositSuccess 
-                : message ?? WalletMessages.DepositFailed;
-
-            var status = resultCode == 0 ? "Success" : "Failed";
-            return Ok(new ParentResultResponse{ Message = responseMessage, 
-                Result = new
+            if (resultCode != 0)
+            {
+                return Ok(new ParentResultResponse
                 {
-                    OrderId = orderId,
-                    Status = status,
-                    ResultCode = resultCode
-                }
+                    Message = message ?? WalletMessages.DepositFailed,
+                    Result = new { OrderId = orderId, Status = "Failed", ResultCode = resultCode }
                 });
+            }
+
+            // Act as IPN fallback: process deposit if not yet completed
+            if (!string.IsNullOrEmpty(orderId) && WalletService.IsDepositTransaction(orderId))
+            {
+                var userId = WalletService.ExtractUserIdFromDepositOrderId(orderId);
+                if (userId != null)
+                {
+                    try
+                    {
+                        await _walletService.ProcessDepositAsync(
+                            userId.Value,
+                            amount,
+                            orderId,
+                            $"Nạp tiền qua MoMo (return fallback)"
+                        );
+                        _logger.LogInformation("✅ Return fallback deposit processed: {OrderId}", orderId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Return fallback deposit failed: {OrderId}", orderId);
+                    }
+                }
+            }
+
+            return Ok(new ParentResultResponse
+            {
+                Message = WalletMessages.DepositSuccess,
+                Result = new { OrderId = orderId, Status = "Success", ResultCode = resultCode }
+            });
         }
 
         // Get transaction history

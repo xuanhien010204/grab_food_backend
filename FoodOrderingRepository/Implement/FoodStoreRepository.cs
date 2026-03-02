@@ -86,9 +86,11 @@ namespace FoodOrderingRepository.Implement
             {
                 string sql =
                     @" SELECT fs.Id, fs.StoreId, fs.FoodId, fs.SizeId, fs.Price, fs.IsAvailable,
+                              fz.Name AS SizeName,
                               f.Id, f.Name, f.FoodTypeId, ft.Name 'FoodTypeName', f.ImageSrc, f.IsAvailable
                        FROM FoodStores fs JOIN Foods f ON fs.FoodId = f.Id
                             JOIN FoodTypes ft ON f.FoodTypeId = ft.Id
+                            LEFT JOIN FoodSizes fz ON fs.SizeId = fz.Id
                        WHERE fs.StoreId = @storeId ";
 
                 object param = new { storeId };

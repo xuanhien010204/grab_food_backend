@@ -80,6 +80,15 @@ namespace FoodOrderingPRM392.Controllers
             await HttpContext.SignOutAsync();
         }
 
+        [HttpGet("temp-data")]
+        [Authorize]
+        public async Task<IActionResult> GetTempCartMetaAsync()
+        {
+            long userId = Convert.ToInt64(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+            var cart = await _userRepository.GetTempCartAsync(userId);
+            return Ok(new ParentResultResponse { Message = "Success", Result = cart });
+        }
+
         [HttpPatch("temp-data")]
         [Authorize]
         public async Task<IActionResult> SaveTempCartMetaAsync([FromBody][Required] Cart cart)
