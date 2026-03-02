@@ -165,7 +165,7 @@ namespace FoodOrderingRepository.Implement
             }
         }
 
-        // Process successful deposit (called from MoMo IPN)
+        // Process successful deposit (called from MoMo IPN or return URL fallback)
         public async Task<decimal> ProcessDepositAsync(long userId, decimal amount, string transactionId, string description)
         {
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
@@ -176,13 +176,34 @@ namespace FoodOrderingRepository.Implement
                 if (user == null)
                     throw new InvalidOperationException("User not found");
 
-                var balanceBefore = user.WalletAmount;
-                var balanceAfter = balanceBefore + amount;
+                // Idempotency: if already completed, return current balance without re-processing
+                var alreadyCompleted = await _context.WalletTransactions
+                    .AnyAsync(t => t.ExternalReference == transactionId && t.Status == TransactionStatus.Completed);
 
-                user.WalletAmount = balanceAfter;
+                if (alreadyCompleted)
+                {
+                    _logger.LogInformation("Deposit already processed (idempotent skip): {TransactionId}", transactionId);
+                    await dbTransaction.RollbackAsync();
+                    return user.WalletAmount;
+                }
+
+                var balanceBefore = user.WalletAmount;
 
                 var pendingTx = await _context.WalletTransactions
                     .FirstOrDefaultAsync(t => t.ExternalReference == transactionId && t.Status == TransactionStatus.Pending);
+
+                // If amount not provided (called from return URL fallback), use the pending tx amount
+                var effectiveAmount = (amount > 0) ? amount : pendingTx?.Amount ?? 0;
+                if (effectiveAmount <= 0)
+                {
+                    _logger.LogWarning("Cannot determine deposit amount for {TransactionId}", transactionId);
+                    await dbTransaction.RollbackAsync();
+                    return balanceBefore;
+                }
+
+                var balanceAfter = balanceBefore + effectiveAmount;
+
+                user.WalletAmount = balanceAfter;
 
                 if (pendingTx != null)
                 {
@@ -197,7 +218,7 @@ namespace FoodOrderingRepository.Implement
                         Id = Guid.NewGuid(),
                         UserId = userId,
                         TransactionType = TransactionType.Deposit,
-                        Amount = amount,
+                        Amount = effectiveAmount,
                         BalanceBefore = balanceBefore,
                         BalanceAfter = balanceAfter,
                         Status = TransactionStatus.Completed,
