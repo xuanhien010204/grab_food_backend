@@ -32,6 +32,10 @@ namespace FoodOrderingCore.Context
         public virtual DbSet<Favorite> Favorites { get; set; }
         public virtual DbSet<Notification> Notifications { get; set; }
 
+        // Withdrawal & Chat entities
+        public virtual DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+        public virtual DbSet<ChatMessage> ChatMessages { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             // Tenant - Store relationship (1:N)
@@ -262,6 +266,47 @@ namespace FoodOrderingCore.Context
 
             builder.Entity<Notification>()
                 .HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt });
+
+            // WithdrawalRequest
+            builder.Entity<WithdrawalRequest>()
+                .HasOne(wr => wr.Manager)
+                .WithMany(u => u.WithdrawalRequests)
+                .HasForeignKey(wr => wr.ManagerId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<WithdrawalRequest>()
+                .HasOne(wr => wr.ProcessedByAdmin)
+                .WithMany(u => u.ProcessedWithdrawals)
+                .HasForeignKey(wr => wr.ProcessedByAdminId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<WithdrawalRequest>()
+                .HasIndex(wr => new { wr.ManagerId, wr.Status });
+
+            // ChatMessage
+            builder.Entity<ChatMessage>()
+                .HasOne(cm => cm.Sender)
+                .WithMany(u => u.SentMessages)
+                .HasForeignKey(cm => cm.SenderId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<ChatMessage>()
+                .HasOne(cm => cm.Receiver)
+                .WithMany(u => u.ReceivedMessages)
+                .HasForeignKey(cm => cm.ReceiverId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<ChatMessage>()
+                .HasOne(cm => cm.Store)
+                .WithMany()
+                .HasForeignKey(cm => cm.StoreId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<ChatMessage>()
+                .HasIndex(cm => new { cm.SenderId, cm.ReceiverId, cm.StoreId, cm.CreatedAt });
+
+            builder.Entity<ChatMessage>()
+                .HasIndex(cm => new { cm.ReceiverId, cm.IsRead });
 
             base.OnModelCreating(builder);
         }

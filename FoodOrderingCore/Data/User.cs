@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FoodOrderingCore.Data
 {
@@ -41,5 +41,9 @@ namespace FoodOrderingCore.Data
         public ICollection<Notification> Notifications { get; set; }
         public ICollection<VoucherUsage> VoucherUsages { get; set; }
         public ICollection<Store> ManagedStores { get; set; }
+        public ICollection<WithdrawalRequest> WithdrawalRequests { get; set; }
+        public ICollection<WithdrawalRequest> ProcessedWithdrawals { get; set; }
+        public ICollection<ChatMessage> SentMessages { get; set; }
+        public ICollection<ChatMessage> ReceivedMessages { get; set; }
     }
 }

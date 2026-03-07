@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using FoodOrderingCore.ConfigurationOptions;
 using FoodOrderingCore.Constants;
 using FoodOrderingCore.Context;
@@ -124,7 +124,7 @@ namespace FoodOrderingRepository.Implement
                     user.WalletAmount -= total;
                     order.PaymentStatus = PaymentStatus.Paid;
 
-                    // Create wallet transaction
+                    // Create wallet transaction for user (payment)
                     var walletTx = new WalletTransaction
                     {
                         Id = Guid.NewGuid(),
@@ -141,6 +141,35 @@ namespace FoodOrderingRepository.Implement
                         CompletedAt = DateTime.UtcNow
                     };
                     _context.WalletTransactions.Add(walletTx);
+
+                    // === Credit manager wallet ===
+                    if (store.ManagerId.HasValue)
+                    {
+                        var manager = await _context.Users.FindAsync(store.ManagerId.Value);
+                        if (manager != null)
+                        {
+                            var managerBalanceBefore = manager.WalletAmount;
+                            manager.WalletAmount += total;
+
+                            var managerTx = new WalletTransaction
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = manager.Id,
+                                TransactionType = TransactionType.Bonus,
+                                Amount = total,
+                                BalanceBefore = managerBalanceBefore,
+                                BalanceAfter = manager.WalletAmount,
+                                Status = TransactionStatus.Completed,
+                                Description = $"Nhận tiền từ đơn hàng #{order.Id.ToString()[..8]} - {store.Name}",
+                                ExternalReference = order.Id.ToString(),
+                                PaymentMethod = "Wallet",
+                                CreatedAt = DateTime.UtcNow,
+                                CompletedAt = DateTime.UtcNow
+                            };
+                            _context.WalletTransactions.Add(managerTx);
+                        }
+                    }
+
                     await _context.SaveChangesAsync();
                 }
 

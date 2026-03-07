@@ -1,5 +1,6 @@
 using FoodOrderingCore.Context;
 using FoodOrderingPRM392.Extension;
+using FoodOrderingPRM392.Hubs;
 using FoodOrderingPRM392.Middlewares;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,21 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// SignalR for real-time chat
+builder.Services.AddSignalR();
+
+// CORS for SignalR
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .SetIsOriginAllowed(_ => true)
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 // Global Exception Handler (catches all exceptions)
@@ -77,11 +93,17 @@ else
 // HTTPS Redirection (Optional)
 //app.UseHttpsRedirection();
 
+// CORS
+app.UseCors("AllowAll");
+
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Controllers
 app.MapControllers();
+
+// SignalR Hub
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

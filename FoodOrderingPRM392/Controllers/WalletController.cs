@@ -198,6 +198,69 @@ namespace FoodOrderingPRM392.Controllers
             });
         }
 
+        // Mobile app calls this endpoint after receiving MoMo callback deep link
+        // to confirm deposit on the server side
+        [HttpPost("deposit/confirm")]
+        [Authorize]
+        public async Task<IActionResult> ConfirmDeposit([FromBody] ConfirmDepositRequest request)
+        {
+            var userId = User.GetUserId();
+            if (userId == null)
+                return Unauthorized(new ParentResponse { Message = WalletMessages.Unauthorized });
+
+            try
+            {
+                _logger.LogInformation(
+                    "Deposit confirm from app: UserId={UserId}, OrderId={OrderId}, ResultCode={ResultCode}",
+                    userId, request.OrderId, request.ResultCode);
+
+                // Validate it's a deposit for this user
+                if (!WalletService.IsDepositTransaction(request.OrderId))
+                    return BadRequest(new ParentResponse { Message = WalletMessages.InvalidTransactionType });
+
+                var extractedUserId = WalletService.ExtractUserIdFromDepositOrderId(request.OrderId);
+                if (extractedUserId == null || extractedUserId.Value != userId.Value)
+                    return BadRequest(new ParentResponse { Message = WalletMessages.InvalidOrderId });
+
+                // Only process if MoMo reported success
+                if (request.ResultCode != 0)
+                {
+                    return Ok(new ParentResultResponse
+                    {
+                        Message = WalletMessages.DepositFailed,
+                        Result = new { OrderId = request.OrderId, Status = "Failed" }
+                    });
+                }
+
+                var newBalance = await _walletService.ProcessDepositAsync(
+                    userId.Value,
+                    request.Amount,
+                    request.OrderId,
+                    $"Nạp tiền qua MoMo - Xác nhận từ app"
+                );
+
+                var wallet = await _walletService.GetWalletBalanceAsync(userId.Value);
+
+                return Ok(new ParentResultResponse
+                {
+                    Message = WalletMessages.DepositSuccess,
+                    Result = new
+                    {
+                        OrderId = request.OrderId,
+                        Status = "Success",
+                        NewBalance = newBalance,
+                        Wallet = wallet
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming deposit: UserId={UserId}, OrderId={OrderId}",
+                    userId, request.OrderId);
+                return StatusCode(500, new ParentResponse { Message = "Có lỗi xảy ra khi xác nhận nạp tiền" });
+            }
+        }
+
         // Get transaction history
         [HttpGet("transactions")]
         [Authorize]

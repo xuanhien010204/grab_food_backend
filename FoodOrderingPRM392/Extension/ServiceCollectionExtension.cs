@@ -1,4 +1,4 @@
-﻿using FoodOrderingCore.ConfigurationOptions;
+using FoodOrderingCore.ConfigurationOptions;
 using FoodOrderingCore.Data;
 using FoodOrderingRepository.Implement;
 using FoodOrderingRepository.Interface;
@@ -41,6 +41,10 @@ namespace FoodOrderingPRM392.Extension
             services.AddScoped<IVoucherRepository, VoucherRepository>();
             services.AddScoped<IFavoriteRepository, FavoriteRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
+
+            // Withdrawal & Chat services
+            services.AddScoped<IWithdrawalRepository, WithdrawalRepository>();
+            services.AddScoped<IChatRepository, ChatRepository>();
 
             return services;
         }

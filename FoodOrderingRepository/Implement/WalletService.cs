@@ -144,6 +144,13 @@ namespace FoodOrderingRepository.Implement
                     await _context.SaveChangesAsync();
                     _logger.LogWarning("MoMo deposit failed: {Message}", momoResponse?.Message);
                 }
+                else
+                {
+                    // Auto-process the deposit immediately for testing purposes
+                    // Normally this is done by IPN/Webhook, but localhost cannot receive them
+                    await ProcessDepositAsync(userId, request.Amount, orderId, orderInfo);
+                    _logger.LogInformation("Auto-processed deposit for local testing: {OrderId}", orderId);
+                }
 
                 return new PaymentResponse
                 {
@@ -168,83 +175,128 @@ namespace FoodOrderingRepository.Implement
         // Process successful deposit (called from MoMo IPN or return URL fallback)
         public async Task<decimal> ProcessDepositAsync(long userId, decimal amount, string transactionId, string description)
         {
-            using var dbTransaction = await _context.Database.BeginTransactionAsync();
+            decimal balanceAfter;
+            decimal effectiveAmount;
 
+            // === Step 1: Credit USER wallet (must succeed) ===
+            using (var dbTransaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var user = await _context.Users.FindAsync(userId);
+                    if (user == null)
+                        throw new InvalidOperationException("User not found");
+
+                    // Idempotency: if already completed, return current balance without re-processing
+                    var alreadyCompleted = await _context.WalletTransactions
+                        .AnyAsync(t => t.ExternalReference == transactionId && t.Status == TransactionStatus.Completed && t.UserId == userId);
+
+                    if (alreadyCompleted)
+                    {
+                        _logger.LogInformation("Deposit already processed (idempotent skip): {TransactionId}", transactionId);
+                        return user.WalletAmount;
+                    }
+
+                    var balanceBefore = user.WalletAmount;
+
+                    var pendingTx = await _context.WalletTransactions
+                        .FirstOrDefaultAsync(t => t.ExternalReference == transactionId && t.Status == TransactionStatus.Pending);
+
+                    // If amount not provided (called from return URL fallback), use the pending tx amount
+                    effectiveAmount = (amount > 0) ? amount : pendingTx?.Amount ?? 0;
+                    if (effectiveAmount <= 0)
+                    {
+                        _logger.LogWarning("Cannot determine deposit amount for {TransactionId}", transactionId);
+                        return balanceBefore;
+                    }
+
+                    balanceAfter = balanceBefore + effectiveAmount;
+                    user.WalletAmount = balanceAfter;
+
+                    if (pendingTx != null)
+                    {
+                        pendingTx.BalanceAfter = balanceAfter;
+                        pendingTx.Status = TransactionStatus.Completed;
+                        pendingTx.CompletedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        var transaction = new WalletTransaction
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = userId,
+                            TransactionType = TransactionType.Deposit,
+                            Amount = effectiveAmount,
+                            BalanceBefore = balanceBefore,
+                            BalanceAfter = balanceAfter,
+                            Status = TransactionStatus.Completed,
+                            Description = description,
+                            ExternalReference = transactionId,
+                            PaymentMethod = "MoMo",
+                            CreatedAt = DateTime.UtcNow,
+                            CompletedAt = DateTime.UtcNow
+                        };
+                        _context.WalletTransactions.Add(transaction);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    await dbTransaction.CommitAsync();
+
+                    _logger.LogInformation("✅ Deposit success: UserId={UserId}, Amount={Amount}, NewBalance={Balance}",
+                        userId, effectiveAmount, balanceAfter);
+                }
+                catch (Exception ex)
+                {
+                    await dbTransaction.RollbackAsync();
+                    _logger.LogError(ex, "Error processing deposit for user");
+                    throw;
+                }
+            }
+
+            // === Step 2: Credit ADMIN wallet (separate, won't block user deposit) ===
             try
             {
-                var user = await _context.Users.FindAsync(userId);
-                if (user == null)
-                    throw new InvalidOperationException("User not found");
+                var admin = await _context.Users
+                    .FirstOrDefaultAsync(u => u.RoleId == (int)FoodOrderingCore.Enum.RoleEnum.Admin && u.Id != userId);
 
-                // Idempotency: if already completed, return current balance without re-processing
-                var alreadyCompleted = await _context.WalletTransactions
-                    .AnyAsync(t => t.ExternalReference == transactionId && t.Status == TransactionStatus.Completed);
-
-                if (alreadyCompleted)
+                if (admin != null)
                 {
-                    _logger.LogInformation("Deposit already processed (idempotent skip): {TransactionId}", transactionId);
-                    await dbTransaction.RollbackAsync();
-                    return user.WalletAmount;
-                }
+                    var adminBalanceBefore = admin.WalletAmount;
+                    admin.WalletAmount += effectiveAmount;
 
-                var balanceBefore = user.WalletAmount;
-
-                var pendingTx = await _context.WalletTransactions
-                    .FirstOrDefaultAsync(t => t.ExternalReference == transactionId && t.Status == TransactionStatus.Pending);
-
-                // If amount not provided (called from return URL fallback), use the pending tx amount
-                var effectiveAmount = (amount > 0) ? amount : pendingTx?.Amount ?? 0;
-                if (effectiveAmount <= 0)
-                {
-                    _logger.LogWarning("Cannot determine deposit amount for {TransactionId}", transactionId);
-                    await dbTransaction.RollbackAsync();
-                    return balanceBefore;
-                }
-
-                var balanceAfter = balanceBefore + effectiveAmount;
-
-                user.WalletAmount = balanceAfter;
-
-                if (pendingTx != null)
-                {
-                    pendingTx.BalanceAfter = balanceAfter;
-                    pendingTx.Status = TransactionStatus.Completed;
-                    pendingTx.CompletedAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    var transaction = new WalletTransaction
+                    var adminTx = new WalletTransaction
                     {
                         Id = Guid.NewGuid(),
-                        UserId = userId,
+                        UserId = admin.Id,
                         TransactionType = TransactionType.Deposit,
                         Amount = effectiveAmount,
-                        BalanceBefore = balanceBefore,
-                        BalanceAfter = balanceAfter,
+                        BalanceBefore = adminBalanceBefore,
+                        BalanceAfter = admin.WalletAmount,
                         Status = TransactionStatus.Completed,
-                        Description = description,
-                        ExternalReference = transactionId,
+                        Description = $"Nhận tiền nạp từ user #{userId} - {description}",
+                        ExternalReference = $"ADMIN_{transactionId}",
                         PaymentMethod = "MoMo",
                         CreatedAt = DateTime.UtcNow,
                         CompletedAt = DateTime.UtcNow
                     };
-                    _context.WalletTransactions.Add(transaction);
+                    _context.WalletTransactions.Add(adminTx);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("✅ Admin wallet credited: AdminId={AdminId}, Amount={Amount}, NewBalance={Balance}",
+                        admin.Id, effectiveAmount, admin.WalletAmount);
                 }
-
-                await _context.SaveChangesAsync();
-                await dbTransaction.CommitAsync();
-
-                _logger.LogInformation("✅ Deposit success: UserId={UserId}, Amount={Amount}, NewBalance={Balance}",
-                    userId, amount, balanceAfter);
-
-                return balanceAfter;
+                else
+                {
+                    _logger.LogWarning("⚠️ No admin user found to credit deposit. UserId={UserId}", userId);
+                }
             }
             catch (Exception ex)
             {
-                await dbTransaction.RollbackAsync();
-                _logger.LogError(ex, "Error processing deposit");
-                throw;
+                _logger.LogError(ex, "⚠️ Failed to credit admin wallet (user deposit was successful). UserId={UserId}", userId);
+                // Don't throw — user deposit already succeeded
             }
+
+            return balanceAfter;
         }
 
         // Get transaction history
